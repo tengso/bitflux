@@ -37,7 +37,7 @@ trait RealtimeRunner { self: Context =>
             // TODO: time precision
             if (lastTime.nonEmpty) {
               if (currentTime.get >= lastTime.get) {
-                logger.error(s"current: ${currentTime.get} last: ${lastTime.get}")
+                logger.info(s"current: ${currentTime.get} last: ${lastTime.get}")
               }
             }
 
