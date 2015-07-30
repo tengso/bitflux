@@ -2,13 +2,13 @@ Bitflux - A Data-flow Library in Scala
 ===================
 Features
 -------------
-####Simple DSL for describing complex business logic with data-flows
-- Stateless and stateful flows 
-- Adjusting graph of flows at runtime (higher-order data-flow)
+####Simple DSL help model reactive applications with:
+- Intuitive stateless and stateful flows 
+- Higher-order data-flow (adjusting graph of flows at runtime)
 - Recursive data-flow
 
 ####Synchronous event propagation enables:
-- Data flowing as a sequence of time-stamped events
+- Data flowing as a sequence of time-aware events
 - Simulation mode for testing against recorded data
 - Deterministic concurrency
 
