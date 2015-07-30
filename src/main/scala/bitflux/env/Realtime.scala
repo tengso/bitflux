@@ -8,13 +8,13 @@ import bitflux.core.SequentialRealtimeContext
 import bitflux.core.SingleLevelParallelRealtimeContext
 import bitflux.core.ParallelRealtimeContext
 
-class Realtime(from: DateTime, to: DateTime, isSequential: Boolean = false)
+class Realtime(from: DateTime, to: DateTime, isSequential: Boolean = true)
     (implicit executionContext: ExecutionContext = ExecutionContext.Implicits.global) {
 
   implicit val context = if (isSequential)
     new SequentialRealtimeContext("bitflux-realtime")
   else
-    new ParallelRealtimeContext("bitflux-realtime")
+    new SingleLevelParallelRealtimeContext("bitflux-realtime")
 
   def run[T](code: => T): Future[T] = {
     Future {
