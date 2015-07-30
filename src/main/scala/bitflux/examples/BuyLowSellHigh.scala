@@ -104,6 +104,4 @@ object BuyLowSellHigh extends App {
  
   // because the sequences of historical events and real-time events are the same
   // we should expect the same sequence of trading decisions
-  assert(backtestBuys.collect.map(_._2) == realtimeBuys.collect.map(_._2))
-  assert(backtestSells.collect.map(_._2) == realtimeSells.collect.map(_._2))
 }
