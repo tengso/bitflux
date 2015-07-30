@@ -1,15 +1,15 @@
-Bitflux - A Dataflow Library in Scala
+Bitflux - A Data-flow Library in Scala
 ===================
 Features
 -------------
-####Simple DSL for defining complex business logic with dataflows
-- Support both stateless and stateful flows 
-- Support adjusting graph of flows at runtime (higher-order dataflow)
-- Support recursive dataflow
+####Simple DSL for describing complex business logic with data-flows
+- Stateless and stateful flows 
+- Adjusting graph of flows at runtime (higher-order data-flow)
+- Recursive data-flow
 
-####Synchronous event propagation 
-- Data are modeled as sequence of time-stamped events
-- Simulation mode for testing with recorded data
+####Synchronous event propagation enables:
+- Data flowing as a sequence of time-stamped events
+- Simulation mode for testing against recorded data
 - Deterministic concurrency
 
 -----
@@ -96,22 +96,22 @@ Sample Code 2
 // Demoing some bitflux features using a toy trading strategy.
 // "Trade" represents crossing of buy and sell orders in market.
 // "Quote" represents the current bid/offer price in market.
-// Both of them are continuously changing events, so can be naturally modeled as dataflows.
+// Both of them are continuously changing events, so can be naturally modeled as data-flows.
 
 object BuyLowSellHigh extends App {
   
-  // normal case class defining the structure of market data
+  // normal case class defining the structure of market data (a.k.a, scalar types)
   case class Trade(price: Double, quantity: Int)
   case class Quote(bidPrice: Double, bidQuantity: Int, askPrice: Double, askQuantity: Int)
 
-  // lift the scalar types into dataflow types that can be consumed and produced
+  // lift the scalar types into data-flow types that can be used as input and output of flow functions
   type Trades = Flow[Trade]
   type Quotes = Flow[Quote]
   type Doubles = Flow[Double]
   type Signals = Flow[Boolean]
 
   // volume-weighted-average of trade price
-  // input and output are dataflows
+  // input and output are data-flows
   def vwap(trades: Trades): Doubles = {
     val prices = trades(_.price) // take the price field from trade and make it a flow of prices
     val quantities = trades(_.quantity).toDoubles
@@ -120,8 +120,8 @@ object BuyLowSellHigh extends App {
   }
 
   // a toy trading strategy that compares the current market price with vwap to decide buy or sell
-  // inputs and outputs are also dataflows 
-  // flow functions are composable
+  // inputs and outputs are also data-flows 
+  // Note that flow functions are composable
   def strategy(quotes: Quotes, trades: Trades): (Signals, Signals) = {
     val vwaps = vwap(trades)
     val mids = (quotes(_.bidPrice) + quotes(_.askPrice)) / 2.0
