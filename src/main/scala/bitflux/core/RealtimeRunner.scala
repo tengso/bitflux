@@ -36,7 +36,7 @@ trait RealtimeRunner { self: Context =>
 
             // TODO: time precision
             if (lastTime.nonEmpty) {
-              if (currentTime.get >= lastTime.get) {
+              if (currentTime.get == lastTime.get) {
                 logger.info(s"current: ${currentTime.get} last: ${lastTime.get}")
               }
             }
