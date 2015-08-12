@@ -405,5 +405,27 @@ package object combinators {
       }
     }
   }
+
+  def ignoreSmallMove[T](i: Flow[T], e: T)(implicit ordering: Ordering[T], num: Numeric[T]) = {
+    new Flow[T] {
+      var prev: Option[T] = None
+
+      react(i) {
+        if (prev.isEmpty) {
+          prev = Some(i())
+          i()
+        }
+        else {
+          val diff = num.abs(num.minus(i(), prev.get))
+          if (ordering.gt(diff, e)) {
+            prev = Some(i())
+            i()
+          }
+        }
+      }
+
+      override def toString = "bitflux.combinators.ignoreSmallMove"
+    }
+  }
 }
 
