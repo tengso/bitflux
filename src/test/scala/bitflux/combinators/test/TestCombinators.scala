@@ -8,9 +8,12 @@ import bitflux.core.Implicits._
 import bitflux.combinators.Implicits._
 import bitflux.core._
 import bitflux.env._
-import bitflux.combinators._
-/*
-class TestUtil extends FunSuite {
+
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+
+class TestCombinators extends FunSuite {
   val time1 = new DateTime(1972, 11, 17, 0, 0, 0, 0)
   val time2 = time1 + Context.TimeStep * 2
   val time3 = time1 + Context.TimeStep * 4
@@ -29,7 +32,7 @@ class TestUtil extends FunSuite {
       }
     }
 
-    val res = bt.res.getAll
+    val res = Await.result(bt.res, 1000 millisecond).collect
 
     assert(res.size === 3)
     assert(res(0)._1 === time1)
@@ -51,7 +54,8 @@ class TestUtil extends FunSuite {
       }
     }
 
-    val res = bt.res.getAll
+    val res = Await.result(bt.res, 1000 millisecond).collect
+
     assert(res.size === 4)
     assert(res(0)._1 === time1)
     assert(res(0)._2 === 1)
@@ -71,10 +75,10 @@ class TestUtil extends FunSuite {
       }
     }
 
-    val out = bt.res.getAll
+    val res = Await.result(bt.res, 1000 millisecond).collect
 
-    assert(out(0)._1 === time1)
-    assert(out(0)._2 === 3)
+    assert(res(0)._1 === time1)
+    assert(res(0)._2 === 3)
   }
 
   test("map 2") {
@@ -86,10 +90,10 @@ class TestUtil extends FunSuite {
       }
     }
 
-    val out = bt.res.getAll
+    val res = Await.result(bt.res, 1000 millisecond).collect
 
-    assert(out(0)._1 === time1)
-    assert(out(0)._2 === "1")
+    assert(res(0)._1 === time1)
+    assert(res(0)._2 === "1")
   }
 
   test("filter") {
@@ -101,13 +105,13 @@ class TestUtil extends FunSuite {
       }
     }
 
-    val out = bt.res.getAll
+    val res = Await.result(bt.res, 1000 millisecond).collect
 
-    assert(out.size === 2)
-    assert(out(0)._1 === time2)
-    assert(out(0)._2 === 2)
-    assert(out(1)._1 === time3)
-    assert(out(1)._2 === 3)
+    assert(res.size === 2)
+    assert(res(0)._1 === time2)
+    assert(res(0)._2 === 2)
+    assert(res(1)._1 === time3)
+    assert(res(1)._2 === 3)
   }
 
   test("filter2") {
@@ -135,8 +139,10 @@ class TestUtil extends FunSuite {
       }
     }
 
-    val goodRes = bt.res._1.getAll
-    val badRes = bt.res._2.getAll
+    val res = Await.result(bt.res, 1000 millisecond)
+
+    val goodRes = res._1.collect
+    val badRes = res._2.collect
 
     assert(goodRes.size === 1)
     assert(goodRes(0)._1 === time1)
@@ -165,13 +171,14 @@ class TestUtil extends FunSuite {
       }
     }
 
-    val out = bt.res.getAll
-    assert(out(0)._1 === time1)
-    assert(out(0)._2 === Seq(1, 2))
-    assert(out(1)._1 === time2)
-    assert(out(1)._2 === Seq(2, 3))
-    assert(out(2)._1 === time3)
-    assert(out(2)._2 === Seq(3, 4))
+    val res = Await.result(bt.res, 1000 millisecond).collect
+
+    assert(res(0)._1 === time1)
+    assert(res(0)._2 === Seq(1, 2))
+    assert(res(1)._1 === time2)
+    assert(res(1)._2 === Seq(2, 3))
+    assert(res(2)._1 === time3)
+    assert(res(2)._2 === Seq(3, 4))
   }
 
   test("seq 2") {
@@ -200,8 +207,10 @@ class TestUtil extends FunSuite {
       }
     }
 
-    val ones = bt.res.ones.getAll
-    val twos = bt.res.twos.getAll
+    val res = Await.result(bt.res, 1000 millisecond)
+
+    val ones = res.ones.collect
+    val twos = res.twos.collect
 
     assert(ones(0)._1 === time1)
     assert(ones(0)._2 === Seq(1, 1))
@@ -228,16 +237,16 @@ class TestUtil extends FunSuite {
       }
     }
 
-    val result = bt.res.getAll
+    val res = Await.result(bt.res, 1000 millisecond).collect
 
-    assert(result.size == 3)
+    assert(res.size == 3)
 
-    assert(result(0)._1 === time1)
-    assert(result(0)._2 === 6)
-    assert(result(1)._1 === time2)
-    assert(result(1)._2 === 8)
-    assert(result(2)._1 === time3)
-    assert(result(2)._2 === 10)
+    assert(res(0)._1 === time1)
+    assert(res(0)._2 === 6)
+    assert(res(1)._1 === time2)
+    assert(res(1)._2 === 8)
+    assert(res(2)._1 === time3)
+    assert(res(2)._2 === 10)
   }
 
   test("branch") {
@@ -248,60 +257,42 @@ class TestUtil extends FunSuite {
       }
     }
 
-    assert(bt.res("0").getAll.size === 0)
-    assert(bt.res("1").getAll.size === 0)
-    assert(bt.res("2").getAll.size === 1)
-    assert(bt.res("2").getAll(0)._1 === time2)
-    assert(bt.res("2").getAll(0)._2 === 2)
-    assert(bt.res("3").getAll(0)._1 === time1)
-    assert(bt.res("3").getAll(0)._2 === 3)
-    assert(bt.res("4").getAll.size === 0)
-    assert(bt.res("5").getAll(0)._1 === time3)
-    assert(bt.res("5").getAll(0)._2 === 5)
+    val res = Await.result(bt.res, 1000 millisecond)
+
+    assert(res("0").collect.size === 0)
+    assert(res("1").collect.size === 0)
+    assert(res("2").collect.size === 1)
+    assert(res("2").collect(0)._1 === time2)
+    assert(res("2").collect(0)._2 === 2)
+    assert(res("3").collect(0)._1 === time1)
+    assert(res("3").collect(0)._2 === 3)
+    assert(res("4").collect.size === 0)
+    assert(res("5").collect(0)._1 === time3)
+    assert(res("5").collect(0)._2 === 5)
   }
 
-  test("constants") {
+  test("ignore small move") {
     val bt = new Simulation(time1, time4) {
       val res = run {
-        val source = CurveSource(Curve(List(time2, time3), List(1, 2)))
-        (source + 1, source * 2, source - 1, source.toDoubles / 2.0, source > 1, source < 1, source === 1)
+        val a = Curve(Seq(
+          time1 -> 3.0,
+          time2 -> 3.1,
+          time3 -> 3.2,
+          time4 -> 3.3,
+          time5 -> 3.4,
+          time6 -> 3.5
+        ))
+        // double has rounding error
+        bitflux.combinators.ignoreSmallMove(a, 0.201)
       }
     }
 
-    assert(bt.res._1.getAll.size === 2)
-    assert(bt.res._1.getAll.map(_._1) === Vector(time2, time3))
-    assert(bt.res._1.getAll.map(_._2) === Vector(2, 3))
+    val res = Await.result(bt.res, 1000 millisecond).collect
 
-    assert(bt.res._2.getAll.size === 2)
-    assert(bt.res._2.getAll.map(_._1) === Vector(time2, time3))
-    assert(bt.res._2.getAll.map(_._2) === Vector(2, 4))
-
-    assert(bt.res._3.getAll.size === 2)
-    assert(bt.res._3.getAll.map(_._1) === Vector(time2, time3))
-    assert(bt.res._3.getAll.map(_._2) === Vector(0, 1))
-
-    assert(bt.res._4.getAll.size === 2)
-    assert(bt.res._4.getAll.map(_._1) === Vector(time2, time3))
-    assert(bt.res._4.getAll.map(_._2) === Vector(0.5, 1))
-
-    assert(bt.res._5.getAll.size === 2)
-    assert(bt.res._5.getAll.map(_._1) === Vector(time2, time3))
-    assert(bt.res._5.getAll.map(_._2) === Vector(false, true))
-
-    assert(bt.res._6.getAll.size === 2)
-    assert(bt.res._6.getAll.map(_._1) === Vector(time2, time3))
-    assert(bt.res._6.getAll.map(_._2) === Vector(false, false))
-
-    assert(bt.res._7.getAll.size === 2)
-    assert(bt.res._7.getAll.map(_._1) === Vector(time2, time3))
-    assert(bt.res._7.getAll.map(_._2) === Vector(true, false))
-  }
-
-  test("demo") {
-   
-  }
-
-  test("merge") {
+    assert(res.size === 2)
+    assert(res(0)._1 === time1)
+    assert(res(0)._2 === 3.0)
+    assert(res(1)._1 === time4)
+    assert(res(1)._2 === 3.3)
   }
 }
-*/

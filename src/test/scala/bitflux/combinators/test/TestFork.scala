@@ -10,7 +10,10 @@ import bitflux.core._
 import bitflux.env._
 import bitflux.combinators._
 
-/*
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+
 class TestFork extends FunSuite {
   val time1 = new DateTime(1972, 11, 17, 0, 0, 0, 0)
   val time2 = time1 + Context.TimeStep * 2
@@ -22,12 +25,12 @@ class TestFork extends FunSuite {
   test("demux") {
     val curve = Curve(List(
       time1 -> Seq(1),
-      time2 -> Seq(), 
+      time2 -> Seq(),
       time3 -> Seq(4, 5, 1),
-      time4 -> Seq(4, 5), 
+      time4 -> Seq(4, 5),
       time5 -> Seq(1, 4, 5)
     ))
-    
+
     val bt = new Simulation(time1, time6) {
       val res = run {
         val in = CurveSource[Seq[Int]](curve)
@@ -46,7 +49,7 @@ class TestFork extends FunSuite {
           react(demuxed) {
             demuxed.newKeys.foreach { key =>
               val newFlow = demuxed(key)
-              
+
               extendFlow(newFlow) {
                 val res = newFlow.last.sum
                 key match {
@@ -62,19 +65,21 @@ class TestFork extends FunSuite {
       }
     }
 
-    val resOne = bt.res._1.getAll
-    val resFour = bt.res._2.getAll
-    val resFive = bt.res._3.getAll
+    val res = Await.result(bt.res, 1000 millisecond)
+
+    val resOne = res._1.collect
+    val resFour = res._2.collect
+    val resFive = res._3.collect
 
     assert(resOne(0)._1 === time3)
     assert(resOne(0)._2 === 1)
-    
+
     assert(resOne(1)._1 === time5)
     assert(resOne(1)._2 === 2)
 
     assert(resFour(0)._1 === time4)
     assert(resFour(0)._2 === 4)
-    
+
     assert(resFour(1)._1 === time5)
     assert(resFour(1)._2 === 8)
 
@@ -106,7 +111,7 @@ class TestFork extends FunSuite {
       }
     }
 
-    val result = bt.res.getAll
+    val result = Await.result(bt.res, 1000 millisecond).collect
 
     assert(result(0)._1 === time1)
     assert(result(0)._2.size === 1)
@@ -162,9 +167,8 @@ class TestFork extends FunSuite {
       }
     }
 
-    val result = bt.res.getAll
+    val result = Await.result(bt.res, 1000 millisecond).collect
 
-    println(result)
     assert(result(0)._1 === time1 + Context.TimeStep)
     assert(result(0)._2.size === 1)
     assert(result(0)._2.last === 1.0)
@@ -190,4 +194,3 @@ class TestFork extends FunSuite {
     assert(result(4)._2(2) === 12.0)
   }
 }
-*/

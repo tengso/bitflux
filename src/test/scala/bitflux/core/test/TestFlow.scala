@@ -465,4 +465,43 @@ class TestFlow extends FunSuite {
     assert(res._2.collect(1)._1 === time2)
     assert(res._2.collect(1)._2 === 200)
   }
+
+  test("constants") {
+    val bt = new Simulation(time1, time4) {
+      val res = run {
+        val source = CurveSource(Curve(List(time2, time3), List(1, 2)))
+        (source + 1, source * 2, source - 1, source.toDoubles / 2.0, source > 1, source < 1, source === 1)
+      }
+    }
+
+    val res = Await.result(bt.res, 1000 millisecond)
+
+    assert(res._1.collect.size === 2)
+    assert(res._1.collect.map(_._1) === Vector(time2, time3))
+    assert(res._1.collect.map(_._2) === Vector(2, 3))
+
+    assert(res._2.collect.size === 2)
+    assert(res._2.collect.map(_._1) === Vector(time2, time3))
+    assert(res._2.collect.map(_._2) === Vector(2, 4))
+
+    assert(res._3.collect.size === 2)
+    assert(res._3.collect.map(_._1) === Vector(time2, time3))
+    assert(res._3.collect.map(_._2) === Vector(0, 1))
+
+    assert(res._4.collect.size === 2)
+    assert(res._4.collect.map(_._1) === Vector(time2, time3))
+    assert(res._4.collect.map(_._2) === Vector(0.5, 1))
+
+    assert(res._5.collect.size === 2)
+    assert(res._5.collect.map(_._1) === Vector(time2, time3))
+    assert(res._5.collect.map(_._2) === Vector(false, true))
+
+    assert(res._6.collect.size === 2)
+    assert(res._6.collect.map(_._1) === Vector(time2, time3))
+    assert(res._6.collect.map(_._2) === Vector(false, false))
+
+    assert(res._7.collect.size === 2)
+    assert(res._7.collect.map(_._1) === Vector(time2, time3))
+    assert(res._7.collect.map(_._2) === Vector(true, false))
+  }
 }
