@@ -12,7 +12,7 @@ import bitflux.core.Implicits._
 import bitflux.combinators.Implicits._
 
 object SD extends App {
-  // A simple example of calculating running standard deviation of price events 
+  // A simple example of calculating running standard deviation of price events
   
   /*
    * A stateful flow producing the number of price ticks 

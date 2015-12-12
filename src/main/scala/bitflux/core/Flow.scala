@@ -8,11 +8,15 @@ import scala.collection.mutable.ArrayBuffer
 
 class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
 
-  protected implicit def valueToSome[S](value: S): Option[S] = Some(value)
-  protected implicit def unitToNone[S](value: Unit): Option[S] = None
+  trait Result[+S]
+  case class ResultValue[S](value: S) extends Result[S]
+  case object ResultUnit extends Result[Nothing]
+
+  protected implicit def valueToSome[S](value: S): ResultValue[S] = ResultValue(value)
+  protected implicit def unitToNone[S](value: Unit): Result[S] = ResultUnit
 
   private[this] val curve = new ArrayBuffer[(DateTime, T)]
-  lazy val logger = Logger(LoggerFactory.getLogger(toString)) 
+  lazy val logger = Logger(LoggerFactory.getLogger(toString))
 
   private val children = new ArrayBuffer[Flow[_]]
   private val parents = new ArrayBuffer[Flow[_]]
@@ -97,7 +101,9 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
       react(self) {
         val output = if (p.nonEmpty) p else if (default.nonEmpty) default else None
         p = Some(self())
-        output
+        if (output.nonEmpty) {
+          output.get
+        }
       }
 
       override def toString() = "bitflux.core.pre"

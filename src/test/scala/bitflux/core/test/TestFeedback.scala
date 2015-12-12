@@ -135,7 +135,7 @@ class TestFeedback extends FunSuite {
   test("fab") {
     val n0 = 0
     val n1 = 1
-    
+
     class Fab(n0: Flow[Int], n_1: Flow[Int], n_2: Flow[Int]) extends Flow[Int] {
       react(n0) {
         n0()
@@ -153,7 +153,7 @@ class TestFeedback extends FunSuite {
         val n_1 = new Feedback[Int]("feedback: n_1")
         val n_2 = new Feedback[Int]("feedback: n_2")
         val n = new Fab(Constant(n0), n_1, n_2)
-        
+
         n_1 from n
         n_2 from n.pre(n1)
         n
@@ -161,7 +161,7 @@ class TestFeedback extends FunSuite {
     }
 
     val result = Await.result(bt.res, 1000 millisecond).collect
-    
+
     assert(result.size === 7)
     assert(result(0)._1 === time1)
     assert(result(0)._2 === 0)

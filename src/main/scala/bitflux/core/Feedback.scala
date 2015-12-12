@@ -19,7 +19,7 @@ class Feedback[T](name: String = "bitflux.core.feedback")(implicit context: Cont
       if (lastTick.nonEmpty && lastTick.get._1 == now) {
         dependent.get()
       }
-      else logger.error(s"feedback ${this} invoked, but source value is not available")
+      else logger.debug(s"feedback ${this} invoked, but source value is not available")
     }
   }
 

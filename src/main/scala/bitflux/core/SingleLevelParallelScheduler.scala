@@ -58,7 +58,7 @@ trait SingleLevelParallelScheduler extends Scheduler { self: Context =>
     val (ranks, sorted) = getSortedFlows
     
     for (rank <- ranks) { 
-      sorted.get(rank).flatMap{ flows =>
+      sorted.get(rank).foreach { flows =>
         done = new CountDownLatch(flows.size)
         for (flow <- flows) {
           if (flow.isSource || flow.getParents.exists(_.isActive)) { 

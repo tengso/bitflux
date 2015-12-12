@@ -14,7 +14,8 @@ class Output[T](parent: Flow[_]) extends Flow[T] {
   
   def pullFromParent(): Unit = {
     if (!isActive) {
-      parent.flatMap(_.getLastTick.flatMap(tick => if (tick._1 == now) setValue(tick._2.asInstanceOf[T])))
+      val t = parent.getLastTick
+      t.foreach(tick => if (tick._1 == now) setValue(tick._2.asInstanceOf[T]))
     }
   }
 }

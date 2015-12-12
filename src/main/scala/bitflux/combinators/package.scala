@@ -36,10 +36,10 @@ package object combinators {
           }
         }
 
-        var res: Option[Seq[T]] = None
+        var res: Result[Seq[T]] = ResultUnit
         values.keys foreach { key =>
           val value = values(key).toList
-          res = Some(value)
+          res = ResultValue(value)
           setValue(value)
           val output = outputs(key)
           // FIXME:
@@ -375,13 +375,14 @@ package object combinators {
 
   def branch[T, K](input: Flow[T], keys: Set[K])(f: T => K): Map[K, Flow[T]] = {
     val flow = new Flow[T] {
-      val outputs = keys.map(_ -> new Output[T](this)).toMap
+      val outputs: Map[K, Output[T]] = keys.map(_ -> new Output[T](this)).toMap
 
       react(input) {
         val v = input()
         setValue(v)
         val k = f(v)
-        outputs.get(k).flatMap(_.pullFromParent())
+        outputs.get(k).foreach(_.pullFromParent())
+        ()
       }
 
       override def toString = "bitflux.combinators.branch"
