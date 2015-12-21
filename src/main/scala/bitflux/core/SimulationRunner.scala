@@ -15,7 +15,7 @@ trait SimulationRunner { self: Context =>
     @annotation.tailrec
     def runIt(start: DateTime, end: DateTime, sources: Seq[SimulationSource[_]]): Unit = {
       // TODO: remember the result of last call to remove duplicate topTick call
-      val sortedTopTicks = sources.map(_.topTick(start, end)).filter(_.nonEmpty).map(_.get._1).sorted
+      val sortedTopTicks = sources.map(_.next(start, end)).filter(_.nonEmpty).map(_.get._1).sorted
       val nextFromSource = sortedTopTicks.headOption
 
       val next = if (getCurrentTime.nonEmpty) {

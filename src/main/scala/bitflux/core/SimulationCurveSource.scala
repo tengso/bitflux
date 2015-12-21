@@ -30,7 +30,7 @@ trait BaseSimulationCurveSource[T] extends Flow[T] with SimulationSource[T] {
     }
   }
 
-  override def topTick(start: DateTime, end: DateTime): Option[(DateTime, T)] = {
+  override def next(start: DateTime, end: DateTime): Option[(DateTime, T)] = {
     val tick = data.get(index)
 
     val ret = tick match {

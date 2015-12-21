@@ -2,22 +2,19 @@ package bitflux.core
 
 import com.github.nscala_time.time.Imports._
 
-class Constant[T](p: => T)(implicit context: Context) 
-    extends Flow[T] 
-    with RealtimeSource[T] 
-    with SimulationSource[T] {
+class Constant[T](p: => T)(implicit context: Context) extends Flow[T] with RealtimeSource[T] with SimulationSource[T] {
   
-  private var ticked = false
-  private var sent = false
+  private[this] var ticked = false
+  private[this] var sent = false
   
-  react(context) { // always return true
+  react(context) {
     if (!sent) {
       sent = true 
       p
     }
   }
   
-  override def topTick(start: DateTime, end: DateTime): Option[(DateTime, T)] = {
+  override def next(start: DateTime, end: DateTime): Option[(DateTime, T)] = {
     if (!ticked) {
       ticked = true
       if (getContext.getCurrentTime.nonEmpty) Some(now + Context.TimeStep, p) else Some(start, p)

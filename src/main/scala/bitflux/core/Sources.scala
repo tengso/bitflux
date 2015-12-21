@@ -9,7 +9,7 @@ trait Source[T] { self: Flow[T] =>
 }
 
 trait SimulationSource[T] extends Source[T] { self: Flow[T] =>
-  def topTick(start: DateTime, end: DateTime): Option[(DateTime, T)]
+  def next(start: DateTime, end: DateTime): Option[(DateTime, T)]
 }
 
 trait RealtimeSource[T] extends Source[T] { self: Flow[T] =>

@@ -29,7 +29,7 @@ class Alarm(time: DateTime)(implicit val context: Context)
     }
   }
 
-  override def topTick(start: DateTime, end: DateTime): Option[(DateTime, TimerTick)] = {
+  override def next(start: DateTime, end: DateTime): Option[(DateTime, TimerTick)] = {
     if (!ticked && time >= start && time <= end) {
       scheduled = true
       Some((time, TimerTick))
