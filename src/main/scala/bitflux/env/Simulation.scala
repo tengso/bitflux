@@ -8,7 +8,7 @@ import bitflux.core.SequentialSimulationContext
 import bitflux.core.ParallelSimulationContext
 import bitflux.core.SingleLevelParallelSimulationContext
 
-class Simulation(from: DateTime, to: DateTime, isSequential: Boolean = false)
+class Simulation(from: DateTime, to: DateTime, isSequential: Boolean = true)
     (implicit val executionContext: ExecutionContext = ExecutionContext.Implicits.global) {
 
   implicit val context = if (isSequential)
