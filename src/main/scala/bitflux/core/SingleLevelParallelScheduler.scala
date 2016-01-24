@@ -21,10 +21,10 @@ trait SingleLevelParallelScheduler extends Scheduler { self: Context =>
       case Execute(now, waiter) => {
         flow.invoke()
         waiter ! Done()
-        flow.logger.trace("sent reply")
+         flow.logger.trace("sent reply")
       }
       case _ => {
-        logger.error("unknow executor command")
+         logger.error("unknown executor command")
       }
     }
   }
@@ -33,10 +33,10 @@ trait SingleLevelParallelScheduler extends Scheduler { self: Context =>
     def receive = {
       case Done() => {
         done.countDown()
-        logger.trace("received reply")
+         logger.trace("received reply")
       }
       case _ => {
-        logger.error("unknow waiter command")
+         logger.error("unknown waiter command")
       }
     }
   }
@@ -64,11 +64,11 @@ trait SingleLevelParallelScheduler extends Scheduler { self: Context =>
           if (flow.isSource || flow.getParents.exists(_.isActive)) { 
             val executor = executors.getOrElseUpdate(flow, createExecutor(flow))
             executor ! Execute(getCurrentTime.get, waiter)
-            logger.trace(s"rank: $rank invoke $flow")
+             logger.trace(s"rank: $rank invoke $flow")
           }
           else {
             done.countDown()
-            logger.trace(s"skipped: $flow with parents: ${flow.getParents(0)}")
+             logger.trace(s"skipped: $flow with parents: ${flow.getParents(0)}")
           }
         }
       }

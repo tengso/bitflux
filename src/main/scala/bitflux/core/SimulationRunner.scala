@@ -1,6 +1,5 @@
 package bitflux.core
 
-import scala.concurrent.ExecutionContext
 import com.github.nscala_time.time.Imports._
 
 trait SimulationRunner { self: Context =>
@@ -15,8 +14,23 @@ trait SimulationRunner { self: Context =>
     @annotation.tailrec
     def runIt(start: DateTime, end: DateTime, sources: Seq[SimulationSource[_]]): Unit = {
       // TODO: remember the result of last call to remove duplicate topTick call
-      val sortedTopTicks = sources.map(_.next(start, end)).filter(_.nonEmpty).map(_.get._1).sorted
-      val nextFromSource = sortedTopTicks.headOption
+      // use a while loop here to improve performance as this is a hotspot
+      val sourceSize = sources.size
+      var i = 0
+      var sortedTopTicks: Option[DateTime] = None
+      while (i < sourceSize) {
+        val source = sources(i)
+        val tick = source.next(start , end)
+        if (tick.nonEmpty) {
+          val t = tick.get._1
+          if (sortedTopTicks.isEmpty || t < sortedTopTicks.get) {
+            sortedTopTicks = Some(t)
+          }
+        }
+        i += 1
+      }
+
+      val nextFromSource = sortedTopTicks
 
       val next = if (getCurrentTime.nonEmpty) {
         val current = getCurrentTime.get
@@ -38,7 +52,7 @@ trait SimulationRunner { self: Context =>
         setCurrentTime(next.get)
 
         if (lastTime.nonEmpty) {
-          assert(currentTime.get > lastTime.get, s"currentTime: ${currentTime.get}, lastTime: ${lastTime.get}")
+//          assert(currentTime.get > lastTime.get, s"currentTime: ${currentTime.get}, lastTime: ${lastTime.get}")
         }
 
         exec()

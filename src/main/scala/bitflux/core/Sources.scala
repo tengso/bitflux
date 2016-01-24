@@ -16,6 +16,33 @@ trait RealtimeSource[T] extends Source[T] { self: Flow[T] =>
   def subscribe(start: DateTime, end: DateTime): Unit
 }
 
+class IteratorSource[T](it: Iterator[(DateTime, T)])(implicit context: Context)
+  extends Flow[T] with SimulationSource[T] {
+  var nextValue: Option[T] = None
+  var index = 0
+
+  react(context) {
+    if (nextValue.nonEmpty) {
+      nextValue.get
+    }
+  }
+
+  def next(start: DateTime, end: DateTime): Option[(DateTime, T)] = {
+    if (it.hasNext) {
+      val (time, value) = it.next()
+      if (time <= end && time >= start) {
+        nextValue = Some(value)
+        Some((time, value))
+      }
+      else None
+    }
+    else {
+      nextValue = None
+      None
+    }
+  }
+}
+
 trait Driver {
   def subscribe(start: DateTime, end: DateTime, source: BaseRealtimeSource[_, _]): Unit
 }

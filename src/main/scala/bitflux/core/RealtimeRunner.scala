@@ -1,9 +1,7 @@
 package bitflux.core
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.ExecutionContext
 
-import akka.actor.ActorSystem
 import com.github.nscala_time.time.Imports.{ DateTime, richReadableInstant }
 
 trait RealtimeRunner { self: Context =>
@@ -30,14 +28,14 @@ trait RealtimeRunner { self: Context =>
         
         queue.poll(wait, TimeUnit.MILLISECONDS) match {
           case (source, timestamp) => {
-            logger.debug(s"received from $source at $now")
+             logger.debug(s"received from $source at $now")
 
             currentTime = Some(now)
 
             // TODO: time precision
             if (lastTime.nonEmpty) {
               if (currentTime.get == lastTime.get) {
-                logger.info(s"current: ${currentTime.get} last: ${lastTime.get}")
+                 logger.info(s"current: ${currentTime.get} last: ${lastTime.get}")
               }
             }
 

@@ -15,8 +15,8 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
   protected implicit def valueToSome[S](value: S): ResultValue[S] = ResultValue(value)
   protected implicit def unitToNone[S](value: Unit): Result[S] = ResultUnit
 
-  private[this] val curve = new ArrayBuffer[(DateTime, T)]
-  lazy val logger = Logger(LoggerFactory.getLogger(toString))
+  private[this] val curve = new ArrayBuffer[(DateTime, T)]()
+   lazy val logger = Logger(LoggerFactory.getLogger(toString))
 
   private val children = new ArrayBuffer[Flow[_]]
   private val parents = new ArrayBuffer[Flow[_]]
@@ -27,12 +27,13 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
 
   private[bitflux] def getContext = context
   private[core] def getChildren = children.toSeq
-  private[core] def getParents = parents.toSeq
+  // toSeq is slow, cache the result?
+  private[core] def getParents = parents
 
   private[core] def addChild(child: Flow[_]) = if (!children.contains(child)) children.append(child)
   private[core] def addParent(parent: Flow[_]) = {
     if (!parents.contains(parent)) {
-      logger.debug(s"connected to parent: [$parent]")
+       logger.debug(s"connected to parent: [$parent]")
       parents.append(parent)
     }
   }
@@ -41,7 +42,7 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
   private[core] def removeTick(t: DateTime): Unit = {
     var break = false
 
-    while (curve.size > 0 && !break) {
+    while (curve.nonEmpty && !break) {
       getLastTick match {
         case Some((time, _)) => {
           if (time == t) {
@@ -56,7 +57,7 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
     }
   }
 
-  def getLastTick: Option[(DateTime, T)] = if (curve.nonEmpty) Some(curve.last) else None
+  def getLastTick: Option[(DateTime, T)] = curve.lastOption
 
   def isEmpty: Boolean = getLastTick.isEmpty
   
@@ -83,7 +84,7 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
         f(self())
       }
 
-      override def toString() = "bitflux.core.map"
+      override def toString = "bitflux.core.map"
     }
   }
 
@@ -106,19 +107,25 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
         }
       }
 
-      override def toString() = "bitflux.core.pre"
+      override def toString = "bitflux.core.pre"
     }
   }
 
   protected[this] def setValue(value: T): Unit = {
-    logger.debug(s"set new value: $value")
+//    if (curve.isEmpty) {
+//      curve.append((context.getCurrentTime.get, value))
+//    }
+//    else {
+//      curve(0) = (context.getCurrentTime.get, value)
+//    }
+//     logger.debug(s"set new value: $value")
     curve.append((context.getCurrentTime.get, value))
   }
 
   // experiment
   // TODO:: check performance
   protected[this] def addValue[Element](elem: Element)(implicit ev: Seq[Element] =:= T, ev2: T =:= Seq[Element]): Unit = {
-    if (curve.size > 0 && curve.last._1 == now) {
+    if (curve.nonEmpty && curve.last._1 == now) {
       val value = curve.last._2
       val newValue = value ++ Seq(elem)
       curve.remove(curve.size - 1)

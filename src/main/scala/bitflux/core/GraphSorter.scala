@@ -5,7 +5,7 @@ import scala.collection.mutable
 // context is the root of the graph
 class GraphSorter(context: Flow[Nothing]) {
   
-  def sort(): (Map[Int, List[Flow[_]]], List[Flow[_]]) = {
+  def sort(): (Map[Int, Seq[Flow[_]]], Seq[Flow[_]]) = {
     val ranked = mutable.Map[Int, mutable.ArrayBuffer[Flow[_]]]()
     val feedbacks = new mutable.ArrayBuffer[Flow[_]]
     
@@ -21,7 +21,7 @@ class GraphSorter(context: Flow[Nothing]) {
     
     context.setRank(0)
     new GraphVisitor(context).visit(sorting)
-    (ranked.toMap.mapValues(_.toList), feedbacks.toList)
+    (ranked.toMap, feedbacks)
   } 
   
   def print() = {

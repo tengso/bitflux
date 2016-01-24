@@ -21,6 +21,8 @@ class FlowOps[+T](self: Flow[T]) {
 
   def sum[S >: T](implicit num: Numeric[S]) = bitflux.combinators.sum[S](self)
 
+  def count = bitflux.combinators.count[T](self)
+
   def mean[S >: T](implicit num: Numeric[S]) = bitflux.combinators.mean[S](self)
 
   def max[S >: T](implicit num: Numeric[S]) = bitflux.combinators.max[S](self)
@@ -51,11 +53,16 @@ class FlowOps[+T](self: Flow[T]) {
   
   def ===[S >: T](that: S)(implicit ord: Ordering[S]) = self.map(ord.equiv(_, that))
 
-  def last[S >: T, E](implicit ev: SeqLike[S, E]) = bitflux.combinators.last[S, E](self)
-  
+  def last[E](implicit ev: Flow[T] <:< Flow[Seq[E]]) = bitflux.combinators.last(self)
+
   def logger[S >: T]() = bitflux.combinators.logger[S](self)
   
   def toSeqFlow = toSeq(self)
   
   def filter(f: T => Boolean) = bitflux.combinators.filter[T](self, f)
+
+  def filterSeq[E](f: E => Boolean)(implicit env: Flow[T] <:< Flow[Seq[E]]) =
+    bitflux.combinators.filterSeq(env(self), f)
+
+  def group[E](n: Int)(implicit env: Flow[T] <:< Flow[Seq[E]]) = bitflux.combinators.group(env(self), n)
 }

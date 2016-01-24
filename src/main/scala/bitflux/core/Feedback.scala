@@ -1,6 +1,6 @@
 package bitflux.core
 
-// Feeback can be viewed as a special kind of "Source" that forward data on the next tick
+// Feedback can be viewed as a special kind of "Source" that forward data on the next tick
 // But it is only invoked at the end of a cycle to retrieve data from dependent flow
 
 // TODO: change variable name of "source"
@@ -19,7 +19,7 @@ class Feedback[T](name: String = "bitflux.core.feedback")(implicit context: Cont
       if (lastTick.nonEmpty && lastTick.get._1 == now) {
         dependent.get()
       }
-      else logger.debug(s"feedback ${this} invoked, but source value is not available")
+       else logger.debug(s"feedback ${this} invoked, but source value is not available")
     }
   }
 

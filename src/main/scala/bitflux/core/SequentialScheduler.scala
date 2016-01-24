@@ -3,17 +3,32 @@ package bitflux.core
 trait SequentialScheduler extends Scheduler { self: Context =>
   
   override def shutdown(): Unit = {}
-  
+
   override def step(graphChanged: Boolean): Unit = {
-    val (ranks, sorted) = getSortedFlows
-    
-    for (rank <- ranks) {
-      val flows = sorted.get(rank).get 
-      for (flow <- flows) {
-        if (flow.getParents.exists(_.isActive) || flow.isSource ) { 
-          flow.invoke()
+    val cached = getSortedFlowSeq
+
+    // use a while loop here to improve performance because this is a hotspot
+    var j = 0
+    val s = cached.size
+    while (j < s) {
+      val flow = cached(j)
+
+      if (flow.isSource) {
+        flow.invoke()
+      }
+      else {
+        val len = flow.getParents.size
+        var i = 0
+        var cont = true
+        while (cont && i < len) {
+          if (flow.getParents(i).isActive) {
+            flow.invoke()
+            cont = false
+          }
+          i += 1
         }
       }
+      j += 1
     }
   }
 }

@@ -14,7 +14,7 @@ class Simulation(from: DateTime, to: DateTime, isSequential: Boolean = false)
   implicit val context = if (isSequential)
     new SequentialSimulationContext("bitflux-simulation")
   else
-    new ParallelSimulationContext("bitflux-simulaiton")
+    new SingleLevelParallelSimulationContext("bitflux-simulation")
 
   def run[T](code: => T)(implicit executionContext: ExecutionContext): Future[T] = {
     Future {

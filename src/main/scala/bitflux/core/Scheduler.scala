@@ -1,16 +1,18 @@
 package bitflux.core
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 trait Scheduler { self: Context =>
 
-  private var sorted: Map[Int, List[Flow[_]]] = _
+  private var sorted: Map[Int, Seq[Flow[_]]] = _
   private var ranks: List[Int] = _
   private var feedbacks: Seq[Flow[_]] = _
 
   private val extendedFlows = new ListBuffer[() => Unit]()
   private var inited = false
   private var changed = false
+
+  private val sortedFlowSeq = ArrayBuffer[Flow[_]]()
 
   override def getFeedbacks: Seq[Flow[_]] = feedbacks
   override def isGraphChanged: Boolean = changed
@@ -22,14 +24,14 @@ trait Scheduler { self: Context =>
       inited = true
     }
 
-    val s = System.nanoTime
-    logger.debug(s"START CYCLE: [${getCurrentTime.get}]")
+    // val s = System.nanoTime
+    // logger.debug(s"START CYCLE: [${getCurrentTime.get}]")
 
     // walk through the graph
     step(changed)
     populateFeedbacks()
 
-    logger.debug(s"END CYCLE: Time Spent [${(System.nanoTime - s) / 1000}us]")
+    // logger.debug(s"END CYCLE: Time Spent [${(System.nanoTime - s) / 1000}us]")
 
     // check if the graph of flows has been changed
     // if yes, re-schedule the execution plan of the graph
@@ -48,9 +50,11 @@ trait Scheduler { self: Context =>
     extendedFlows.append(() => code)
   }
 
-  protected def getSortedFlows: (List[Int], Map[Int, List[Flow[_]]]) = synchronized {
+  protected def getSortedFlows: (Seq[Int], Map[Int, Seq[Flow[_]]]) = synchronized {
     (ranks, sorted)
   }
+
+  protected def getSortedFlowSeq: IndexedSeq[Flow[_]] = sortedFlowSeq
 
   protected def step(isGraphChanged: Boolean): Unit // to be implemented by derived
 
@@ -65,6 +69,14 @@ trait Scheduler { self: Context =>
     sorted = result._1
     ranks = sorted.keys.toList.sorted
     feedbacks = result._2.toSet.toSeq
+
+    sortedFlowSeq.clear()
+    for (rank <- ranks) {
+      val flows = sorted.get(rank).get
+      for (flow <- flows) {
+        sortedFlowSeq += flow
+      }
+    }
   }
 }
 

@@ -4,20 +4,28 @@ import scala.collection.mutable.ArrayBuffer
 
 trait ReactiveFlow[+T] { self: Flow[T] =>
   
-//  private[this] val codeBlocks = new ArrayBuffer[(Seq[Flow[_]], () => Option[T])]
   private[this] val codeBlocks = new ArrayBuffer[(Seq[Flow[_]], () => Result[T])]
   private[this] var rank: Int = _
 
   private[core] def setRank(rank: Int): Unit = this.rank = rank
 
   private[core] def invoke(): Boolean = {
-    val start = System.nanoTime
+//    val start = System.nanoTime
 
     var hasNewValue = false
-    
-    if (codeBlocks.nonEmpty) {
-      for ((p, code) <- codeBlocks) {
-        if (ticked(p: _*)) {
+
+    // use while loop here to improve performance, as this is a hotspot
+    val size = codeBlocks.size
+    var i = 0
+    while (i < size) {
+      codeBlocks(i) match { case (p, code) =>
+        val ticked = if (p.length == 1) {
+          p(0).isActive || p(0).isInstanceOf[Context]
+        }
+        else {
+          p.isEmpty || p.exists(input => input.isActive || input.isInstanceOf[Context])
+        }
+        if (ticked) {
           val result = code()
           result match {
             case  ResultValue(v) =>
@@ -27,9 +35,10 @@ trait ReactiveFlow[+T] { self: Flow[T] =>
           }
         }
       }
+      i += 1
     }
-    
-    logger.trace(s"took: ${(System.nanoTime - start) / 1000}")
+
+//    logger.trace(s"took: ${(System.nanoTime - start) / 1000}")
     
     hasNewValue
   }
@@ -37,7 +46,7 @@ trait ReactiveFlow[+T] { self: Flow[T] =>
   protected[core] def getRank = rank
 
   protected[core] def hasValue(p: Flow[_]*): Boolean = 
-    p.forall(!_.getLastValue.isEmpty)
+    p.forall(_.getLastValue.nonEmpty)
 
   protected[this] def react(p: Flow[_]*)(code: => Result[T]): Unit = {
     init(p: _*)
@@ -67,6 +76,12 @@ trait ReactiveFlow[+T] { self: Flow[T] =>
 
   // any of the input ticked, return true
   private def ticked(inputs: Flow[_]*): Boolean = {
-    inputs.isEmpty || inputs.exists(input => input.isActive || input.isInstanceOf[Context])
+    // use a simpler check for a common case of input size == 1
+    if (inputs.length == 1) {
+      inputs.head.isActive || inputs.head.isInstanceOf[Context]
+    }
+    else {
+      inputs.isEmpty || inputs.exists(input => input.isActive || input.isInstanceOf[Context])
+    }
   }
 }

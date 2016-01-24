@@ -3,7 +3,7 @@ package bitflux
 import scala.math.Numeric.Implicits._
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 import bitflux.core._
 
@@ -56,11 +56,21 @@ package object combinators {
     outputs
   }
 
-  def last[S, E](input: Flow[S])(implicit ev: SeqLike[S, E]) = new Flow[E] {
+//  def last[S, E](input: Flow[S])(implicit ev: SeqLike[S, E]) = new Flow[E] {
+//    react(input) {
+//      ev.lastOption(input()) match {
+//        case Some(value) => value
+//        case None =>
+//      }
+//    }
+//
+//    override def toString = "bitflux.combinators.last"
+//  }
+
+  def last[E](input: Flow[Seq[E]]) = new Flow[E] {
     react(input) {
-      ev.lastOption(input()) match {
-        case Some(value) => value
-        case None =>
+      if (input().nonEmpty) {
+        input().last
       }
     }
 
@@ -69,16 +79,24 @@ package object combinators {
 
   def logger[T](input: Flow[T]) = new Flow[T] {
     react(input) {
-      logger.warn("log: " + input())
+      // logger.warn("log: " + input())
       input()
     }
 
     override def toString = "bitflux.combinators.logger"
   }
 
-  def flatten[T](inputs: List[Flow[Seq[T]]]) = new Flow[Seq[T]] {
+  def flattenSeq[T](inputs: List[Flow[Seq[T]]]) = new Flow[Seq[T]] {
     react(inputs) {
       inputs.filter(_.isActive).flatMap(input => input()).toSeq
+    }
+
+    override def toString = "bitflux.combinators.flattenSeq"
+  }
+
+  def flatten[T](inputs: List[Flow[T]]) = new Flow[Seq[T]] {
+    react(inputs) {
+      inputs.filter(_.isActive).map(input => input()).toSeq
     }
 
     override def toString = "bitflux.combinators.flatten"
@@ -105,7 +123,7 @@ package object combinators {
       new Flow[I] {
         react(input) {
           input.newKeys foreach { key =>
-            logger.debug(s"new key: $key")
+            // logger.debug(s"new key: $key")
             val init = input(key)()
             val demuxed = input(key)
 
@@ -116,7 +134,7 @@ package object combinators {
                   output.add(key, result)
                 }
                 case _ => {
-                  logger.error(s"$init not found")
+                  // logger.error(s"$init not found")
                   throw new Exception("stop")
                 }
               }
@@ -154,11 +172,22 @@ package object combinators {
     react(input) {
       val v = input()
       if (f(v)) {
-        input()
+        v
       }
     }
 
-    override def toString = "bitflux.combinators.map"
+    override def toString = "bitflux.combinators.filter"
+  }
+
+  def filterSeq[T](input: Flow[Seq[T]], f: T => Boolean) = new Flow[Seq[T]] {
+    react(input) {
+      val res = input() filter (f(_))
+      if (res.nonEmpty) {
+        res
+      }
+    }
+
+    override def toString = "bitflux.combinators.filterSeq"
   }
 
   def sum[T: Numeric](p: Flow[T]) = new Flow[Double] {
@@ -426,6 +455,40 @@ package object combinators {
       }
 
       override def toString = "bitflux.combinators.ignoreSmallMove"
+    }
+  }
+
+  def group[T](i: Flow[Seq[T]], n: Int): Flow[Seq[Seq[T]]] = {
+    new Flow[Seq[Seq[T]]] {
+      var buffer = ArrayBuffer[T]()
+
+      react(i) {
+        val result = ArrayBuffer[Seq[T]]()
+
+        val size = i().size
+        var index = 0
+        while (index < size) {
+          buffer.append(i()(index))
+
+          if (buffer.size == n) {
+            result.append(buffer)
+            buffer = ArrayBuffer[T]()
+          }
+          index += 1
+        }
+
+        //        i() foreach { i =>
+        //          buffer.append(i)
+        //          if (buffer.size == n) {
+        //            result.append(buffer)
+        //            buffer.clear()
+        //          }
+        //        }
+
+        if (result.nonEmpty) {
+          result
+        }
+      }
     }
   }
 }

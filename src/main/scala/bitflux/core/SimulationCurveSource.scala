@@ -19,9 +19,7 @@ trait BaseSimulationCurveSource[T] extends Flow[T] with SimulationSource[T] {
       val topTime = value.get._1
       val topValue = value.get._2
 
-      // println(s"top time $topTime $topValue")
-
-      logger.trace(s"topTime: $topTime topValue: $topValue now: $currentTime index: $index")
+//      logger.trace(s"topTime: $topTime topValue: $topValue now: $currentTime index: $index")
 
       if (topTime == currentTime.get || getContext.isRealtime) {
         index += 1
@@ -35,7 +33,7 @@ trait BaseSimulationCurveSource[T] extends Flow[T] with SimulationSource[T] {
 
     val ret = tick match {
       case None => {
-        logger.debug(s"no more tick")
+//        logger.debug(s"no more tick")
         None
       }
       case Some((time, value)) => {

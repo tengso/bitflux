@@ -82,7 +82,7 @@ trait ParallelScheduler extends Scheduler { self: Context =>
         logger.trace(s"received reply from $flow")
       }
       case m @ _ => {
-        logger.error(s"unknow waiter command: $m")
+        logger.error(s"unknown waiter command: $m")
       }
     }
   }
