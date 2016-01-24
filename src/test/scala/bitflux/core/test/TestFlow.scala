@@ -66,17 +66,8 @@ class TestFlow extends FunSuite {
   }
 
   test("VWAP") {
-    val nRuns = 1000000
+    val nRuns = 10000
     val trades = (1 to nRuns).map(i => Trade(price = 100, quantity = 200)).toList
-   /*
-    val trades = List(
-      Trade(price = 100.0, quantity = 200),
-      Trade(price = 150.0, quantity = 100),
-      Trade(price = 150.0, quantity = 100),
-      Trade(price = 150.0, quantity = 100),
-      Trade(price = 150.0, quantity = 100))
-  */
-    // val timesTrades = List(time1, time2, time3, time3 + 1, time3 + 2)
     val timesTrades = (1 to nRuns).map(i => time1 + i).toList
 
     def vwap(trade: Flow[Trade]): Flow[Double] = {
@@ -86,7 +77,7 @@ class TestFlow extends FunSuite {
       (price * quantity).sum / quantity.sum
     }
 
-    val bt = new Simulation(time1, time3 + 2) {
+    val bt = new Simulation(time1, timesTrades.last, isSequential = true) {
       val res = run {
         val trade = Curve(timesTrades, trades)
         vwap(trade)

@@ -41,7 +41,7 @@ class Alarm(time: DateTime)(implicit val context: Context)
   override def subscribe(start: DateTime, end: DateTime): Unit = {
     val task = new java.util.TimerTask {
       override def run() = {
-        logger.debug(s"sent timer event: ${DateTime.now}")
+//         logger.debug(s"sent timer event: ${DateTime.now}")
         scheduled = true
         val realtimeContext = getContext.asInstanceOf[RealtimeRunner]
         realtimeContext.enqueue((Alarm.this, time))

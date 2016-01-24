@@ -151,7 +151,7 @@ class TestFork extends FunSuite {
         val newGraph: ExtendedFlow[Int, Double] = (init: Seq[Int], updates: Flow[Seq[Int]]) => {
           // the constant created here will kick off the running of this new graph
           val start = Constant(init.last).toSeqFlow
-          val merged = flatten(
+          val merged = flattenSeq(
               List(
                 start, 
                 updates
