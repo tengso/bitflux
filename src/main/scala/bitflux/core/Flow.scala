@@ -1,7 +1,6 @@
 package bitflux.core
 
 import scala.concurrent.duration._
-import com.typesafe.scalalogging.Logger
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ArrayBuffer
@@ -16,7 +15,7 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
   protected implicit def unitToNone[S](value: Unit): Result[S] = ResultUnit
 
   private[this] val curve = new ArrayBuffer[(Timestamp, T)]()
-  lazy val logger = Logger(LoggerFactory.getLogger(toString))
+  lazy val logger = LoggerFactory.getLogger(toString)
 
   private val children = new ArrayBuffer[Flow[_]]
   private val parents = new ArrayBuffer[Flow[_]]
