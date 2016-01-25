@@ -2,8 +2,6 @@ package bitflux.core
 
 import java.util.concurrent.CountDownLatch
 
-import com.github.nscala_time.time.Imports._
-
 import scala.collection.mutable
 
 import akka.actor.Actor
@@ -13,7 +11,7 @@ import akka.actor.Props
 
 trait SingleLevelParallelScheduler extends Scheduler { self: Context =>
   
-  private case class Execute(now: DateTime, waiter: ActorRef)
+  private case class Execute(now: Timestamp, waiter: ActorRef)
   private case class Done() 
   
   private class Executor[T](flow: Flow[T]) extends Actor {

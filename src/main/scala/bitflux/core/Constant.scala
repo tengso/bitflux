@@ -1,7 +1,5 @@
 package bitflux.core
 
-import com.github.nscala_time.time.Imports._
-
 class Constant[T](p: => T)(implicit context: Context) extends Flow[T] with RealtimeSource[T] with SimulationSource[T] {
   
   private[this] var ticked = false
@@ -14,7 +12,7 @@ class Constant[T](p: => T)(implicit context: Context) extends Flow[T] with Realt
     }
   }
   
-  override def next(start: DateTime, end: DateTime): Option[(DateTime, T)] = {
+  override def next(start: Timestamp, end: Timestamp): Option[(Timestamp, T)] = {
     if (!ticked) {
       ticked = true
       if (getContext.getCurrentTime.nonEmpty) Some(now + Context.TimeStep, p) else Some(start, p)
@@ -23,7 +21,7 @@ class Constant[T](p: => T)(implicit context: Context) extends Flow[T] with Realt
   }
   
   // TODO: the timestamp might not be "start"
-  override def subscribe(start: DateTime, end: DateTime): Unit = 
+  override def subscribe(start: Timestamp, end: Timestamp): Unit =
     getContext.asInstanceOf[RealtimeRunner].enqueue((this, start))
 }
 

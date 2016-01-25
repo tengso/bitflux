@@ -1,6 +1,6 @@
 package bitflux.core
 
-import com.github.nscala_time.time.Imports._
+import scala.concurrent.duration._
 import com.typesafe.scalalogging.Logger
 import org.slf4j.LoggerFactory
 
@@ -15,8 +15,8 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
   protected implicit def valueToSome[S](value: S): ResultValue[S] = ResultValue(value)
   protected implicit def unitToNone[S](value: Unit): Result[S] = ResultUnit
 
-  private[this] val curve = new ArrayBuffer[(DateTime, T)]()
-   lazy val logger = Logger(LoggerFactory.getLogger(toString))
+  private[this] val curve = new ArrayBuffer[(Timestamp, T)]()
+  lazy val logger = Logger(LoggerFactory.getLogger(toString))
 
   private val children = new ArrayBuffer[Flow[_]]
   private val parents = new ArrayBuffer[Flow[_]]
@@ -39,7 +39,7 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
   }
 
   // experimental
-  private[core] def removeTick(t: DateTime): Unit = {
+  private[core] def removeTick(t: Timestamp): Unit = {
     var break = false
 
     while (curve.nonEmpty && !break) {
@@ -57,7 +57,7 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
     }
   }
 
-  def getLastTick: Option[(DateTime, T)] = curve.lastOption
+  def getLastTick: Option[(Timestamp, T)] = curve.lastOption
 
   def isEmpty: Boolean = getLastTick.isEmpty
   
@@ -65,9 +65,9 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
 
   def isActive: Boolean = curve.nonEmpty && curve.last._1 == now
 
-  def collect: Vector[(DateTime, T)] = curve.toVector
+  def collect: Vector[(Timestamp, T)] = curve.toVector
   
-  def getAll: Vector[(DateTime, T)] = collect 
+  def getAll: Vector[(Timestamp, T)] = collect
 
   def getLastValue: Option[T] = {
     val lastTick = getLastTick
@@ -124,7 +124,8 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
 
   // experiment
   // TODO:: check performance
-  protected[this] def addValue[Element](elem: Element)(implicit ev: Seq[Element] =:= T, ev2: T =:= Seq[Element]): Unit = {
+  protected[this] def addValue[Element](elem: Element)
+                                       (implicit ev: Seq[Element] =:= T, ev2: T =:= Seq[Element]): Unit = {
     if (curve.nonEmpty && curve.last._1 == now) {
       val value = curve.last._2
       val newValue = value ++ Seq(elem)
@@ -144,7 +145,8 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
 
   // experiment
   // TODO: check performance
-  protected[this] def addValue[S <: T, Element](output: Output[S], elem: Element)(implicit ev: T =:= Seq[Element], ev2: Seq[Element] =:= T): Unit = {
+  protected[this] def addValue[S <: T, Element](output: Output[S], elem: Element)
+                                               (implicit ev: T =:= Seq[Element], ev2: Seq[Element] =:= T): Unit = {
     // remove the current tick, if there is one already
     val current = getLastTick
     if (current.nonEmpty) {
@@ -200,14 +202,14 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
 
   private[this] def findContext(flow: Flow[_]): Flow[_] = if (flow.getParents.isEmpty) flow else findContext(flow.parents(0))
 
-  protected[this] def now: DateTime = getContext.getCurrentTime.get
+  protected[this] def now: Timestamp = getContext.getCurrentTime.get
   
-  protected[this] def prior: Option[DateTime] = getContext.getLastTime
+  protected[this] def prior: Option[Timestamp] = getContext.getLastTime
 
   // TODO: interval must be greater than zero 
   protected[this] def setTimer(interval: Int, timer: Timer): Unit = {
     extendFlow(timer) {
-      val t = new Alarm(now.plusMillis(interval))(getContext)
+      val t = new Alarm(now + (interval millis))(getContext)
       timer.setInput(t)
       addParent(timer)
       timer.addChild(this)

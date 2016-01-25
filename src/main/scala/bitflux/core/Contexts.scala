@@ -1,24 +1,22 @@
 package bitflux.core
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.ExecutionContext.Implicits.global
-import com.github.nscala_time.time.Imports._
 
 trait Context extends Flow[Nothing] {
   val name: String
   val isRealtime: Boolean
   implicit val executionContext: ExecutionContext
   
-  protected var currentTime: Option[DateTime] = None
-  protected var lastTime: Option[DateTime] = None
+  protected var currentTime: Option[Timestamp] = None
+  protected var lastTime: Option[Timestamp] = None
   
-  def run(start: DateTime, end: DateTime): Unit 
+  def run(start: Timestamp, end: Timestamp): Unit
   
-  def getCurrentTime: Option[DateTime] = currentTime  
-  def setCurrentTime(time: DateTime): Unit = currentTime = Some(time)
+  def getCurrentTime: Option[Timestamp] = currentTime
+  def setCurrentTime(time: Timestamp): Unit = currentTime = Some(time)
   
-  def getLastTime: Option[DateTime] = lastTime  
-  def setLastTime(time: DateTime): Unit = lastTime = Some(time) 
+  def getLastTime: Option[Timestamp] = lastTime
+  def setLastTime(time: Timestamp): Unit = lastTime = Some(time)
   
   @volatile
   protected[core] def isGraphChanged: Boolean

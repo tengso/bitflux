@@ -3,12 +3,13 @@ package bitflux.env
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 
-import com.github.nscala_time.time.Imports._
+//import com.github.nscala_time.time.Imports._
 import bitflux.core.SequentialSimulationContext
 import bitflux.core.ParallelSimulationContext
 import bitflux.core.SingleLevelParallelSimulationContext
+import bitflux.core.Timestamp
 
-class Simulation(from: DateTime, to: DateTime, isSequential: Boolean = true)
+class Simulation(from: Timestamp, to: Timestamp, isSequential: Boolean = true)
     (implicit val executionContext: ExecutionContext = ExecutionContext.Implicits.global) {
 
   implicit val context = if (isSequential)

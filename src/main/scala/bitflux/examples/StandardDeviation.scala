@@ -1,7 +1,5 @@
 package bitflux.examples
 
-import com.github.nscala_time.time.Imports._
-
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -59,7 +57,7 @@ object SD extends App {
   }
   
   // Generate prices for testing
-  val baseTime = DateTime.now
+  val baseTime = Timestamp.now
   val prices = Curve(Seq(
       baseTime     -> 100.0, 
       baseTime + 1 -> 110.0, 

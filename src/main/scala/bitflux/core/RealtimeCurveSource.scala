@@ -1,8 +1,5 @@
 package bitflux.core
 
-import com.github.nscala_time.time.Imports._
-import org.joda.time.DateTime
-
 class RealtimeCurveSource[T](data: Curve[T])(implicit context: Context)
     extends Flow[T] 
     with RealtimeSource[T] {
@@ -21,7 +18,7 @@ class RealtimeCurveSource[T](data: Curve[T])(implicit context: Context)
     }
   }
 
-  override def subscribe(start: DateTime, end: DateTime): Unit = {
+  override def subscribe(start: Timestamp, end: Timestamp): Unit = {
     val self = this
     val realTimeContext = context.asInstanceOf[RealtimeRunner]
 
@@ -29,11 +26,11 @@ class RealtimeCurveSource[T](data: Curve[T])(implicit context: Context)
       override def run() {
         data.foreach {
           case (time, _) =>
-            val waitTime = time.millis - DateTime.now.millis
+            val waitTime = (time.units - Timestamp.now.units) / 1000000
             if (waitTime > 0) {
               Thread.sleep(waitTime)
             }
-            realTimeContext.enqueue((self, DateTime.now))
+            realTimeContext.enqueue((self, Timestamp.now))
             current += 1
         }
       }

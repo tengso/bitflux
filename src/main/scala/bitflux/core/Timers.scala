@@ -1,17 +1,11 @@
 package bitflux.core
 
-import akka.actor.Actor
-import akka.actor.Props
-import com.github.nscala_time.time.Imports._
-
-import scala.concurrent.duration.DurationLong
-
 class TimerTick
 object TimerTick extends TimerTick
 
 class Timer extends Placeholder[TimerTick]
 
-class Alarm(time: DateTime)(implicit val context: Context)
+class Alarm(time: Timestamp)(implicit val context: Context)
   extends Flow[TimerTick]
   with RealtimeSource[TimerTick]
   with SimulationSource[TimerTick] {
@@ -29,7 +23,7 @@ class Alarm(time: DateTime)(implicit val context: Context)
     }
   }
 
-  override def next(start: DateTime, end: DateTime): Option[(DateTime, TimerTick)] = {
+  override def next(start: Timestamp, end: Timestamp): Option[(Timestamp, TimerTick)] = {
     if (!ticked && time >= start && time <= end) {
       scheduled = true
       Some((time, TimerTick))
@@ -38,7 +32,7 @@ class Alarm(time: DateTime)(implicit val context: Context)
       None
   }
 
-  override def subscribe(start: DateTime, end: DateTime): Unit = {
+  override def subscribe(start: Timestamp, end: Timestamp): Unit = {
     val task = new java.util.TimerTask {
       override def run() = {
 //         logger.debug(s"sent timer event: ${DateTime.now}")
@@ -48,7 +42,7 @@ class Alarm(time: DateTime)(implicit val context: Context)
       }
     }
 
-    new java.util.Timer().schedule(task, time.millis - now.millis)
+    new java.util.Timer().schedule(task, (time.units - now.units) / 1000000)
   }
 }  
 

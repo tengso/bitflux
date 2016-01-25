@@ -1,7 +1,5 @@
 package bitflux.core
 
-import com.github.nscala_time.time.Imports._
-
 
 trait BaseSimulationCurveSource[T] extends Flow[T] with SimulationSource[T] {
 
@@ -28,7 +26,7 @@ trait BaseSimulationCurveSource[T] extends Flow[T] with SimulationSource[T] {
     }
   }
 
-  override def next(start: DateTime, end: DateTime): Option[(DateTime, T)] = {
+  override def next(start: Timestamp, end: Timestamp): Option[(Timestamp, T)] = {
     val tick = data.get(index)
 
     val ret = tick match {
@@ -42,7 +40,8 @@ trait BaseSimulationCurveSource[T] extends Flow[T] with SimulationSource[T] {
           case Some(currentTime) => {
             // currentTime is the time of the cycle just finished
             forwardTo(currentTime)
-            data.get(index)
+            val n = data.get(index)
+            n
           }
         }
       }
@@ -52,7 +51,7 @@ trait BaseSimulationCurveSource[T] extends Flow[T] with SimulationSource[T] {
 
   // one tick after
   // TODO: avoid while loop
-  private def forwardTo(to: DateTime): Unit = {
+  private def forwardTo(to: Timestamp): Unit = {
     var break = false
     while (!break) {
       val tick = data.get(index)

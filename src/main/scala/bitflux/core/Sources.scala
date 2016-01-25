@@ -1,22 +1,20 @@
 package bitflux.core
 
-import com.github.nscala_time.time.Imports._
-
-case class NewData[T](source: Source[T], timestamp: DateTime)
+case class NewData[T](source: Source[T], timestamp: Timestamp)
 
 trait Source[T] { self: Flow[T] =>
   override def isSource = true
 }
 
 trait SimulationSource[T] extends Source[T] { self: Flow[T] =>
-  def next(start: DateTime, end: DateTime): Option[(DateTime, T)]
+  def next(start: Timestamp, end: Timestamp): Option[(Timestamp, T)]
 }
 
 trait RealtimeSource[T] extends Source[T] { self: Flow[T] =>
-  def subscribe(start: DateTime, end: DateTime): Unit
+  def subscribe(start: Timestamp, end: Timestamp): Unit
 }
 
-class IteratorSource[T](it: Iterator[(DateTime, T)])(implicit context: Context)
+class IteratorSource[T](it: Iterator[(Timestamp, T)])(implicit context: Context)
   extends Flow[T] with SimulationSource[T] {
   var nextValue: Option[T] = None
   var index = 0
@@ -27,7 +25,7 @@ class IteratorSource[T](it: Iterator[(DateTime, T)])(implicit context: Context)
     }
   }
 
-  def next(start: DateTime, end: DateTime): Option[(DateTime, T)] = {
+  def next(start: Timestamp, end: Timestamp): Option[(Timestamp, T)] = {
     if (it.hasNext) {
       val (time, value) = it.next()
       if (time <= end && time >= start) {
@@ -44,7 +42,7 @@ class IteratorSource[T](it: Iterator[(DateTime, T)])(implicit context: Context)
 }
 
 trait Driver {
-  def subscribe(start: DateTime, end: DateTime, source: BaseRealtimeSource[_, _]): Unit
+  def subscribe(start: Timestamp, end: Timestamp, source: BaseRealtimeSource[_, _]): Unit
 }
 
 abstract class BaseRealtimeSource[I, O](context: Context) extends Flow[O] with RealtimeSource[O] {
@@ -56,10 +54,10 @@ abstract class BaseRealtimeSource[I, O](context: Context) extends Flow[O] with R
   private val incoming = new java.util.concurrent.LinkedBlockingQueue[I]
   private val outgoing = new java.util.concurrent.LinkedBlockingQueue[I]
   
-  private var start: DateTime = _
-  private var end: DateTime = _
+  private var start: Timestamp = _
+  private var end: Timestamp = _
   
-  override def subscribe(start: DateTime, end: DateTime) {
+  override def subscribe(start: Timestamp, end: Timestamp) {
     this.start = start
     this.end = end
     
@@ -83,14 +81,14 @@ abstract class BaseRealtimeSource[I, O](context: Context) extends Flow[O] with R
     
     // FIXME: remove while loop
     override def run() {
-      var now = DateTime.now
+      var now = Timestamp.now
       while (now < end) {
-        val data = incoming.poll(end.millis - now.millis, java.util.concurrent.TimeUnit.MILLISECONDS)
+        val data = incoming.poll(end.units - now.units, java.util.concurrent.TimeUnit.MILLISECONDS)
         if (data != null) {
           outgoing.put(data)
           context.asInstanceOf[RealtimeRunner].enqueue((BaseRealtimeSource.this, now))
         }
-        now = DateTime.now
+        now = Timestamp.now
       }
     }
   }

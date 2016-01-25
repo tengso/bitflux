@@ -1,7 +1,5 @@
 package bitflux.examples
 
-import com.github.nscala_time.time.Imports._
-
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -52,7 +50,7 @@ object BuyLowSellHigh extends App {
 
   // a helper function for generating testing data
   // every data-point has an explicit timestamp
-  def genData(baseTime: DateTime): (Curve[Quote], Curve[Trade]) = {
+  def genData(baseTime: Timestamp): (Curve[Quote], Curve[Trade]) = {
     val quotes = Curve(Seq(
       baseTime        -> Quote(180, 100, 181, 100),
       baseTime + 1000 -> Quote(190, 200, 192, 300),
@@ -70,7 +68,7 @@ object BuyLowSellHigh extends App {
   }
 
   // test the strategy with historical data
-  val backtestStartTime = new DateTime(2014, 1, 10, 9, 40, 0)
+  val backtestStartTime = Timestamp(2014, 1, 10, 9, 40, 0)
 
   val backtest = new Simulation(backtestStartTime, backtestStartTime + 5 * 1000) {
     val result = run {
@@ -88,7 +86,7 @@ object BuyLowSellHigh extends App {
   // test the strategy with fake real-time data
   // we are using the exact same strategy function, just wiring it in the real-time context
   // and feed it with real-time data
-  val realtimeStartTime = DateTime.now
+  val realtimeStartTime = Timestamp.now
 
   val realtime = new Realtime(realtimeStartTime, realtimeStartTime + 5 * 1000) {
     val result = run {

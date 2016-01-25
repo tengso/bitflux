@@ -2,19 +2,17 @@ package bitflux.core
 
 import java.util.concurrent.TimeUnit
 
-import com.github.nscala_time.time.Imports.{ DateTime, richReadableInstant }
-
 trait RealtimeRunner { self: Context =>
   
   override val isRealtime = true
 
   private val cachedSources = new java.util.IdentityHashMap[Source[_], Boolean]()
 
-  private val queue = new java.util.concurrent.LinkedBlockingQueue[(Source[_], DateTime)]
+  private val queue = new java.util.concurrent.LinkedBlockingQueue[(Source[_], Timestamp)]
 
-  def enqueue(newEvent: (Source[_], DateTime)): Unit = queue.put(newEvent)
+  def enqueue(newEvent: (Source[_], Timestamp)): Unit = queue.put(newEvent)
 
-  class Listener(start: DateTime, end: DateTime) extends Runnable {
+  class Listener(start: Timestamp, end: Timestamp) extends Runnable {
 
     override def run(): Unit = {
       subscribeToSources(start, end)
@@ -23,12 +21,12 @@ trait RealtimeRunner { self: Context =>
       
       @annotation.tailrec
       def runIt(): Unit = {
-        val now = DateTime.now
-        val wait = end.millis - now.millis
+        val now = Timestamp.now
+        val wait = end.units - now.units
         
         queue.poll(wait, TimeUnit.MILLISECONDS) match {
           case (source, timestamp) => {
-             logger.debug(s"received from $source at $now")
+            logger.debug(s"received from $source at $now")
 
             currentTime = Some(now)
 
@@ -52,7 +50,7 @@ trait RealtimeRunner { self: Context =>
       }
     }
 
-    private def subscribeToSources(start: DateTime, end: DateTime): Unit = {
+    private def subscribeToSources(start: Timestamp, end: Timestamp): Unit = {
       val sources = getChildren.filter(_.isSource).map(s => s.asInstanceOf[RealtimeSource[_]])
       for (source <- sources) {
         if (!cachedSources.containsKey(source)) {
@@ -63,8 +61,8 @@ trait RealtimeRunner { self: Context =>
     }
   }
 
-  override def run(start: DateTime, end: DateTime): Unit = {
+  override def run(start: Timestamp, end: Timestamp): Unit = {
     executionContext.execute(new Listener(start, end))
-    Thread.sleep(end.millis - start.millis)
+    Thread.sleep((end.units - start.units) / 1000000)
   }
 }

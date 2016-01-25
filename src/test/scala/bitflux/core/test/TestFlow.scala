@@ -3,7 +3,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.concurrent.duration._
 
-import com.github.nscala_time.time.Imports._
+//import com.github.nscala_time.time.Imports._
 import org.scalatest.FunSuite
 
 import bitflux.core.Implicits._
@@ -12,7 +12,7 @@ import bitflux.core._
 import bitflux.env._
 
 class TestFlow extends FunSuite {
-  val time1 = new DateTime(1972, 11, 17, 0, 0, 0, 0)
+  val time1 = Timestamp(1972, 11, 17, 0, 0, 0, 0)
   val time2 = time1 + Context.TimeStep * 2
   val time3 = time1 + Context.TimeStep * 4
   val time4 = time1 + Context.TimeStep * 6
@@ -66,9 +66,10 @@ class TestFlow extends FunSuite {
   }
 
   test("VWAP") {
-    val nRuns = 10000
-    val trades = (1 to nRuns).map(i => Trade(price = 100, quantity = 200)).toList
-    val timesTrades = (1 to nRuns).map(i => time1 + i).toList
+    val nRuns: Long = 1000000
+    val trades = (1L to nRuns).map(i => Trade(price = 100, quantity = 200)).toList
+    // FIXME: why millis doesn't work?
+    val timesTrades = (1L to nRuns).map(i => time1 + i).toList
 
     def vwap(trade: Flow[Trade]): Flow[Double] = {
       val price = trade(_.price)
@@ -77,6 +78,8 @@ class TestFlow extends FunSuite {
       (price * quantity).sum / quantity.sum
     }
 
+    println(time1)
+    println(timesTrades.last)
     val bt = new Simulation(time1, timesTrades.last, isSequential = true) {
       val res = run {
         val trade = Curve(timesTrades, trades)
@@ -93,11 +96,11 @@ class TestFlow extends FunSuite {
     }
 
     val start = System.currentTimeMillis()
-    val res = Await.result(bt.res, 10000 millisecond)()
+    val res = Await.result(bt.res, 20000 millisecond).collect
     val end = System.currentTimeMillis()
     print(end - start)
 
-    assert(res === pq.sum / quantities.sum)
+    assert(res.last._2 === pq.sum / quantities.sum)
   }
 
   test("max") {

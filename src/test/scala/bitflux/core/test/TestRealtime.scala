@@ -4,7 +4,7 @@ import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-import com.github.nscala_time.time.Imports._
+//import com.github.nscala_time.time.Imports._
 
 import org.scalatest.FunSuite
 
@@ -15,7 +15,7 @@ import bitflux.env._
 
 class TestFlowRealtime extends FunSuite {
   test("realtime-curve") {
-    val now = DateTime.now
+    val now = Timestamp.now
     val firstEventTime = now + 1000
     val secondEventTime = now + 2000
     
@@ -30,15 +30,15 @@ class TestFlowRealtime extends FunSuite {
 
     assert(result.size === 2)
     
-    assert(result(0)._1.millis - firstEventTime.millis < 3)
+    assert(result(0)._1.units - firstEventTime.units < 3)
     assert(result(0)._2 === 2)
     
-    assert(result(1)._1.millis - secondEventTime.millis < 3)
+    assert(result(1)._1.units - secondEventTime.units < 3)
     assert(result(1)._2 === 3)
   }
 
   test("realtime-constant") {
-    val now = DateTime.now
+    val now = Timestamp.now
 
     val test = new Realtime(now + 1, now + 2000) {
       val res = run {
@@ -89,7 +89,7 @@ class TestFlowRealtime extends FunSuite {
       }
     }
 
-    val now = DateTime.now
+    val now = Timestamp.now
     val test = new Realtime(now + 50, now + 4000) {
       val res = run {
         new SetTimer(Constant(1))
@@ -109,7 +109,7 @@ class TestFlowRealtime extends FunSuite {
   }
   
   test("realtime paralell session") {
-    val now = DateTime.now
+    val now = Timestamp.now
     val firstEventTime = now + 1000
     val secondEventTime = now + 2000
 
@@ -152,7 +152,7 @@ class TestFlowRealtime extends FunSuite {
       }
     }
     
-    val r = new bitflux.env.Realtime(DateTime.now, DateTime.now + 2000 * 12) {
+    val r = new bitflux.env.Realtime(Timestamp.now, Timestamp.now + 2000 * 12) {
       val res = run {
         val i = bitflux.core.Constant(1.0)
         val t = new T(i)

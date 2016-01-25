@@ -4,13 +4,13 @@ import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global 
 import scala.concurrent.duration._
 
-import com.github.nscala_time.time.Imports._
+//import com.github.nscala_time.time.Imports._
 import org.scalatest.FunSuite
 import bitflux.core._
 import bitflux.env._
 
 class TestFeedback extends FunSuite {
-  val time1 = new DateTime(1972, 11, 17, 0, 0, 0, 0)
+  val time1 = Timestamp(1972, 11, 17, 0, 0, 0, 0)
   val time2 = time1 + Context.TimeStep * 2
   val time3 = time1 + Context.TimeStep * 4
   val time4 = time1 + Context.TimeStep * 6

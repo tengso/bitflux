@@ -1,7 +1,6 @@
 package bitflux.core
 
 import scala.collection.mutable
-import com.github.nscala_time.time.Imports._
 
 object DynamicOutput {
   val baseKeyName = "_base"
@@ -10,7 +9,7 @@ object DynamicOutput {
 class DynamicOutput[T](implicit context: Context) {
   
   val outputs = mutable.Map[String, Flow[Seq[T]]]()
-  private val keysAdded = mutable.Map[String, DateTime]()
+  private val keysAdded = mutable.Map[String, Timestamp]()
   private val children = mutable.ArrayBuffer[Flow[_]]()
   private val parents = mutable.ArrayBuffer[Flow[_]]()
   

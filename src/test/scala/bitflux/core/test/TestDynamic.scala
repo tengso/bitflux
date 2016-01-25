@@ -6,19 +6,19 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import org.scalatest.FunSuite
 
-import com.github.nscala_time.time.Imports._
+//import com.github.nscala_time.time.Imports._
 
 import bitflux.core._
 import bitflux.combinators.Implicits._
 import bitflux.env._
 
 class TestDynamic extends FunSuite {
-  val time1 = new DateTime(1972, 11, 17, 10, 0, 0)
+  val time1 = Timestamp(1972, 11, 17, 10, 1, 2, 3, 4, 5)
   val time2 = time1 + 2000
   val time3 = time1 + 3000
   val time4 = time1 + 4000
   val time5 = time1 + 5000
-  
+
   test("extend") {
     val bt = new Simulation(time1, time5) {
       val res = run {
@@ -37,13 +37,14 @@ class TestDynamic extends FunSuite {
         }
 
         val source = Curve(List(time1, time2), List(1, 2))
-        val s = new S(source)
+        new S(source)
         output * Constant(2)
       }
     }
 
     val res = Await.result(bt.res, 1000 millisecond).collect
 
+    println(res)
     assert(res.size === 3)
     assert(res(0)._1 === time3)
     assert(res(0)._2 === 8)

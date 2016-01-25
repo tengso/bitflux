@@ -1,23 +1,22 @@
 package bitflux.core
 
-import com.github.nscala_time.time.Imports._
 
 trait SimulationRunner { self: Context =>
   
   override val isRealtime = false
 
-  override def run(start: DateTime, end: DateTime): Unit = {
+  override def run(start: Timestamp, end: Timestamp): Unit = {
     val sources = getSources
     runIt(start, end, sources)
     shutdown()
     
     @annotation.tailrec
-    def runIt(start: DateTime, end: DateTime, sources: Seq[SimulationSource[_]]): Unit = {
+    def runIt(start: Timestamp, end: Timestamp, sources: Seq[SimulationSource[_]]): Unit = {
       // TODO: remember the result of last call to remove duplicate topTick call
       // use a while loop here to improve performance as this is a hotspot
       val sourceSize = sources.size
       var i = 0
-      var sortedTopTicks: Option[DateTime] = None
+      var sortedTopTicks: Option[Timestamp] = None
       while (i < sourceSize) {
         val source = sources(i)
         val tick = source.next(start , end)
