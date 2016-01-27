@@ -37,13 +37,14 @@ class TestFeedback extends FunSuite {
         val input = CurveSource(Curve(times, values))
         val feedback = new Feedback[Int]()
         val fd = new FD(input, feedback)
-        feedback from (fd)
-        fd
+        feedback from fd
+        fd.setBufferSize(4)
       }
     }
-    // new bitflux.view.GraphView(context).show()
 
     val res = Await.result(bt.res, 1000 millisecond).collect
+
+    println(res)
 
     assert(res.size === 4)
     assert(res(0)._1 === time1)
@@ -80,7 +81,7 @@ class TestFeedback extends FunSuite {
         val fd = new Feedback[Int]
         val a = new A(s, fd)
         fd from (a)
-        a
+        a.setBufferSize(3)
       }
     }
 
@@ -114,7 +115,7 @@ class TestFeedback extends FunSuite {
         val fact_n_1 = new Feedback[Int]("feedback: n_1")
         val fact_n = new Fact(n, fact_n_1)
         fact_n_1 from fact_n
-        fact_n
+        fact_n.setBufferSize(5)
       }
     }
 
@@ -156,7 +157,7 @@ class TestFeedback extends FunSuite {
 
         n_1 from n
         n_2 from n.pre(n1)
-        n
+        n.setBufferSize(7)
       }
     }
 

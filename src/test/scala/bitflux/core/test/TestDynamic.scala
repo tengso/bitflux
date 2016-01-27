@@ -38,7 +38,7 @@ class TestDynamic extends FunSuite {
 
         val source = Curve(List(time1, time2), List(1, 2))
         new S(source)
-        output * Constant(2)
+        (output * Constant(2)).setBufferSize(3)
       }
     }
 

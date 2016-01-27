@@ -32,7 +32,7 @@ class TestTimer extends FunSuite {
         val data = Curve(List(time1, time1 + 2), List(1, 5))
         val t1 = new Alarm(time1 + 1)
         val t2 = new Alarm(time1 + 5)
-        new Output(t1, t2, data)
+        new Output(t1, t2, data).setBufferSize(2)
       }
     }
 
@@ -74,7 +74,7 @@ class TestTimer extends FunSuite {
     val bt = new Simulation(time1, time1 + 6) {
       val res = run {
         val data = Curve(List(time1, time1 + 1), List(1, 5))
-        new SetTimer(data)
+        new SetTimer(data).setBufferSize(3)
       }
     }
 
@@ -112,7 +112,7 @@ class TestTimer extends FunSuite {
       val res = run {
         val i = Constant(1.0)
         val t = new T(i)
-        t
+        t.setBufferSize(10)
       }
     }.res
 

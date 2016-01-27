@@ -22,6 +22,8 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
   lazy private val context: Context = findContext(this).asInstanceOf[Context]
   private val connected = new java.util.IdentityHashMap[Flow[_], Int]
 
+  private var bufferSize = 1
+
   def isSource = false
 
   private[bitflux] def getContext = context
@@ -54,6 +56,11 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
         case None => break = true
       }
     }
+  }
+
+  def setBufferSize(size: Int): Flow[T] =  {
+    bufferSize = size
+    this
   }
 
   def getLastTick: Option[(Timestamp, T)] = curve.lastOption
@@ -111,14 +118,22 @@ class Flow[+T] extends ExtensibleFlow[T] with ReactiveFlow[T] {
   }
 
   protected[this] def setValue(value: T): Unit = {
-//    if (curve.isEmpty) {
-//      curve.append((context.getCurrentTime.get, value))
-//    }
-//    else {
-//      curve(0) = (context.getCurrentTime.get, value)
-//    }
-//     logger.debug(s"set new value: $value")
-    curve.append((context.getCurrentTime.get, value))
+    val tick = (context.getCurrentTime.get, value)
+
+    if (curve.isEmpty || curve.size < bufferSize) {
+      curve.append(tick)
+    }
+    else {
+      if (bufferSize == 1) {
+        curve(0) = tick
+      }
+      else {
+        curve.remove(0)
+        curve.append(tick)
+      }
+    }
+
+//    logger.debug(s"set new value: $value")
   }
 
   // experiment

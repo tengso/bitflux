@@ -3,7 +3,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.concurrent.duration._
 
-//import com.github.nscala_time.time.Imports._
 import org.scalatest.FunSuite
 
 import bitflux.core.Implicits._
@@ -50,7 +49,7 @@ class TestFlow extends FunSuite {
     val bt = new Simulation(time1, time4) {
       val result = run {
         val quote = Curve(timesQuotes, quotes)
-        new Mid(quote)
+        new Mid(quote).setBufferSize(5)
       }
     }.result
 
@@ -118,7 +117,7 @@ class TestFlow extends FunSuite {
 
     val bt = new Simulation(time1, time3) {
       val res = run {
-        new Max(Curve(times, values))
+        new Max(Curve(times, values)).setBufferSize(3)
       }
     }
     
@@ -151,7 +150,7 @@ class TestFlow extends FunSuite {
       val res = run {
         val price = CurveSource(Curve(List(time1, time2), List(2.0, 3.0)))
         val two = Constant(2.0)
-        price * two
+        (price * two).setBufferSize(2)
       }
     }
 
@@ -164,7 +163,7 @@ class TestFlow extends FunSuite {
   }
 
   test("lift field") {
-    case class Position(val quantity: Int, val notional: Double)
+    case class Position(quantity: Int, notional: Double)
 
     val pos1 = Position(quantity = 2, notional = 100.0)
     val pos2 = Position(quantity = 4, notional = 200.0)
@@ -173,7 +172,7 @@ class TestFlow extends FunSuite {
       val res = run {
         val positions = CurveSource(Curve(List(time1, time2), List(pos1, pos2)))
         val quantities = positions(_.quantity)
-        quantities * Constant(2)
+        (quantities * Constant(2)).setBufferSize(2)
       }
     }
 
@@ -192,7 +191,7 @@ class TestFlow extends FunSuite {
         val source = Curve(List(time1, time2), List(1, 2))
         val result = out * Constant(2)
         out.setInput(source)
-        result
+        result.setBufferSize(2)
       }
     }
 
@@ -204,8 +203,6 @@ class TestFlow extends FunSuite {
     assert(res(1)._1 === time2)
     assert(res(1)._2 === 4)
   }
-
- 
 
   test("scheduler") {
     class A(val in: Flow[Int], set: Boolean) extends Flow[Int] {
@@ -248,7 +245,7 @@ class TestFlow extends FunSuite {
         val a = CurveSource(Curve(List(time1, time2, time3), List(3, 2, 5)))
         val b = CurveSource(Curve(List(time1, time2), List(2, 4)))
 
-        new A(List(a, b), List(1, 2))
+        (new A(List(a, b), List(1, 2))).setBufferSize(3)
       }
 
     }
@@ -277,7 +274,7 @@ class TestFlow extends FunSuite {
         val b = CurveSource(Curve(List(time1, time2), List(2, 4)))
 
         val input = Map("a" -> a, "b" -> b)
-        new A(input, Map(1 -> 1))
+        new A(input, Map(1 -> 1)).setBufferSize(3)
       }
     }
     val result = Await.result(bt.res, 1000 millisecond).collect
@@ -307,7 +304,7 @@ class TestFlow extends FunSuite {
         }
 
         val c = Curve(List(time1, time2), List(2, 4))
-        new BOM(c)
+        new BOM(c).setBufferSize(2)
       }
     }
 
@@ -328,7 +325,7 @@ class TestFlow extends FunSuite {
     val bt = new Simulation(time1, time3) {
       val res = run {
         val in = CurveSource[Seq[Int]](curve)
-        in.last
+        in.last.setBufferSize(2)
       }
     }
     val result = Await.result(bt.res, 1000 millisecond).collect
@@ -351,8 +348,8 @@ class TestFlow extends FunSuite {
       val res = run {
         val in = CurveSource(curve)
 
-        val price = in(_.price)
-        val quantity = in(_.quantity)
+        val price = in(_.price).setBufferSize(3)
+        val quantity = in(_.quantity).setBufferSize(3)
         (price, quantity)
       }
     }
@@ -398,7 +395,7 @@ class TestFlow extends FunSuite {
       val res = run {
         val in = CurveSource(curve)
 
-        in(_.bid)(_.price)
+        in(_.bid)(_.price).setBufferSize(3)
       }
     }
 
@@ -437,7 +434,7 @@ class TestFlow extends FunSuite {
         }
       }
       
-      (vwap, quantities)
+      (vwap.setBufferSize(2), quantities.setBufferSize(2))
     }
     
     val trades = Curve(
@@ -471,7 +468,14 @@ class TestFlow extends FunSuite {
     val bt = new Simulation(time1, time4) {
       val res = run {
         val source = CurveSource(Curve(List(time2, time3), List(1, 2)))
-        (source + 1, source * 2, source - 1, source.toDoubles / 2.0, source > 1, source < 1, source === 1)
+        ((source + 1).setBufferSize(2).setBufferSize(2),
+          (source * 2).setBufferSize(2),
+          (source - 1).setBufferSize(2),
+          (source.toDoubles / 2.0).setBufferSize(2),
+          (source > 10).setBufferSize(2),
+          (source <= 1).setBufferSize(2),
+          (source === 1).setBufferSize(2)
+          )
       }
     }
 
@@ -495,14 +499,44 @@ class TestFlow extends FunSuite {
 
     assert(res._5.collect.size === 2)
     assert(res._5.collect.map(_._1) === Vector(time2, time3))
-    assert(res._5.collect.map(_._2) === Vector(false, true))
+    assert(res._5.collect.map(_._2) === Vector(false, false))
 
     assert(res._6.collect.size === 2)
     assert(res._6.collect.map(_._1) === Vector(time2, time3))
-    assert(res._6.collect.map(_._2) === Vector(false, false))
+    assert(res._6.collect.map(_._2) === Vector(true, false))
 
     assert(res._7.collect.size === 2)
     assert(res._7.collect.map(_._1) === Vector(time2, time3))
     assert(res._7.collect.map(_._2) === Vector(true, false))
+  }
+
+  test("buffer size 1") {
+    val bt = new Simulation(time1, time4) {
+      val res = run {
+        val source = CurveSource(Curve(List(time2, time3, time4), List(1, 2, 3)))
+        source.setBufferSize(2)
+      }
+    }
+
+    val res = Await.result(bt.res, 1000 millisecond).collect
+
+    assert(res.size == 2)
+    assert(res.map(_._1) === Vector(time3, time4))
+    assert(res.map(_._2) === Vector(2, 3))
+  }
+
+  test("buffer size 2") {
+    val bt = new Simulation(time1, time4) {
+      val res = run {
+        val source = CurveSource(Curve(List(time2, time3, time4), List(1, 2, 3)))
+        source.setBufferSize(4)
+      }
+    }
+
+    val res = Await.result(bt.res, 1000 millisecond).collect
+
+    assert(res.size == 3)
+    assert(res.map(_._1) === Vector(time2, time3, time4))
+    assert(res.map(_._2) === Vector(1, 2, 3))
   }
 }

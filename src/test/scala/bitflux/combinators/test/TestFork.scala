@@ -61,7 +61,7 @@ class TestFork extends FunSuite {
             }
           }
         }
-        (one, four, five)
+        (one.setBufferSize(2), four.setBufferSize(2), five.setBufferSize(2))
       }
     }
 
@@ -107,7 +107,7 @@ class TestFork extends FunSuite {
         }
         val de = demux(in, dem)
         val out = mux(de)
-        out
+        out.setBufferSize(4)
       }
     }
 
@@ -163,7 +163,7 @@ class TestFork extends FunSuite {
 
         val graphFinder: ExtendedFlowMap[Int, Double] = (init: Seq[Int]) => Some(newGraph)
 
-        fork(curve, keyFinder, graphFinder)
+        fork(curve, keyFinder, graphFinder).setBufferSize(5)
       }
     }
 

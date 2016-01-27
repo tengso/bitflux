@@ -1,19 +1,15 @@
 package bitflux.core.test
 
 import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-
-//import com.github.nscala_time.time.Imports._
 
 import org.scalatest.FunSuite
 
-import bitflux.core.Implicits._
 import bitflux.combinators.Implicits._
 import bitflux.core._
 import bitflux.env._
 
-class TestFlowRealtime extends FunSuite {
+class TestRealtime extends FunSuite {
   test("realtime-curve") {
     val now = Timestamp.now
     val firstEventTime = now + 1000
@@ -22,7 +18,7 @@ class TestFlowRealtime extends FunSuite {
     val test = new Realtime(now + 1, now + 5000) {
       val res = run {
         val data = CurveSource(Curve(List(firstEventTime, secondEventTime), List(1, 2)))
-        data + 1
+        (data + 1).setBufferSize(2)
       }
     }
 
@@ -92,7 +88,7 @@ class TestFlowRealtime extends FunSuite {
     val now = Timestamp.now
     val test = new Realtime(now + 50, now + 4000) {
       val res = run {
-        new SetTimer(Constant(1))
+        new SetTimer(Constant(1)).setBufferSize(3)
       }
     }
 
@@ -118,7 +114,7 @@ class TestFlowRealtime extends FunSuite {
         val data = CurveSource(
             Curve(List(firstEventTime, secondEventTime), List(1, 2)))
         
-        data + 1
+        (data + 1).setBufferSize(2)
       } 
     }
 
@@ -156,7 +152,7 @@ class TestFlowRealtime extends FunSuite {
       val res = run {
         val i = bitflux.core.Constant(1.0)
         val t = new T(i)
-        t
+        t.setBufferSize(10)
       }
     }.res
     

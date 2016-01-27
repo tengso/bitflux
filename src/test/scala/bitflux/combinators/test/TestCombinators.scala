@@ -28,7 +28,7 @@ class TestCombinators extends FunSuite {
     val bt = new Simulation(time1, time3) {
       val res = run {
         val min = bitflux.combinators.min(CurveSource(Curve(times, values)))
-        min
+        min.setBufferSize(3)
       }
     }
 
@@ -50,7 +50,7 @@ class TestCombinators extends FunSuite {
 
     val bt = new Simulation(time1, time4) {
       val res = run {
-        bitflux.combinators.mean(CurveSource(Curve(times, values)))
+        bitflux.combinators.mean(CurveSource(Curve(times, values))).setBufferSize(4)
       }
     }
 
@@ -101,7 +101,7 @@ class TestCombinators extends FunSuite {
       val res = run {
         val input = CurveSource(Curve(List(time1, time2, time3), List(1, 2, 3)))
         val res = input filter (_ > 1)
-        res
+        res.setBufferSize(2)
       }
     }
 
@@ -135,7 +135,7 @@ class TestCombinators extends FunSuite {
         val res = new Filter(input)
         val good = res.good * Constant(100)
         val bad = res.bad
-        (good, bad)
+        (good.setBufferSize(2), bad.setBufferSize(2))
       }
     }
 
@@ -167,7 +167,7 @@ class TestCombinators extends FunSuite {
           }
         }
         val res = new Append(input)
-        res
+        res.setBufferSize(3)
       }
     }
 
@@ -191,6 +191,9 @@ class TestCombinators extends FunSuite {
         class Append(input: Flow[Seq[Int]]) extends Flow[Seq[Int]] {
           val ones = new Output[Seq[Int]](this)
           val twos = new Output[Seq[Int]](this)
+
+          ones.setBufferSize(3)
+          twos.setBufferSize(2)
 
           react(input) {
             input() foreach { input =>
@@ -233,7 +236,7 @@ class TestCombinators extends FunSuite {
 
         val r = a > b
 
-        bitflux.combinators.If(r, a * 2, b * 2)
+        bitflux.combinators.If(r, a * 2, b * 2).setBufferSize(3)
       }
     }
 
@@ -283,7 +286,7 @@ class TestCombinators extends FunSuite {
           time6 -> 3.5
         ))
         // double has rounding error
-        bitflux.combinators.ignoreSmallMove(a, 0.201)
+        bitflux.combinators.ignoreSmallMove(a, 0.201).setBufferSize(2)
       }
     }
 
