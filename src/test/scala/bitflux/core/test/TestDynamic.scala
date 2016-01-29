@@ -6,8 +6,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import org.scalatest.FunSuite
 
-//import com.github.nscala_time.time.Imports._
-
 import bitflux.core._
 import bitflux.combinators.Implicits._
 import bitflux.env._

@@ -10,8 +10,6 @@ import bitflux.combinators._
 
 import org.scalatest.FunSuite
 
-//import com.github.nscala_time.time.Imports._
-
 class TestTimer extends FunSuite {
   val time1 = Timestamp(1972, 11, 17, 9, 10, 0)
   

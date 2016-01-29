@@ -1,7 +1,5 @@
 package bitflux.combinators.test
 
-//import com.github.nscala_time.time.Imports._
-
 import org.scalatest.FunSuite
 
 import bitflux.core.Implicits._
