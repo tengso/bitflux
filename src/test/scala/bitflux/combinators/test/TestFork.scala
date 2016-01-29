@@ -193,4 +193,68 @@ class TestFork extends FunSuite {
     assert(result(4)._2(1) === 3.0)
     assert(result(4)._2(2) === 12.0)
   }
+
+  test("word count") {
+    val curve = Curve(List(
+      time1 -> Seq("i"),
+      time2 -> Seq("see", "you"),
+      time3 -> Seq("you"),
+      time4 -> Seq("see"),
+      time5 -> Seq("you", "i"),
+      time6 -> Seq("i", "you")
+    ))
+
+    val bt = new Simulation(time1, time6 + 10) {
+      val res = run {
+        val keyFinder: KeyMap[String] = (input: String) => Some(input)
+
+        val counter: ExtendedFlow[String, (String, Double)] = (init: Seq[String], updates: Flow[Seq[String]]) => {
+
+          val inputs = bitflux.combinators.flattenSeq(List(Constant(init), updates))
+
+          new Flow[Seq[(String, Double)]] {
+            var c = 0.0
+
+            react(inputs)  {
+              println(s"update: $now ${inputs()}")
+              c += inputs().size
+              Seq((inputs().head, c))
+            }
+          }
+        }
+
+        val graphFinder: ExtendedFlowMap[String, (String, Double)] = (init: Seq[String]) => Some(counter)
+
+        fork(curve, keyFinder, graphFinder).setBufferSize(1000)
+      }
+    }
+
+    val result = Await.result(bt.res, 1000 millisecond).collect
+
+    println(result)
+
+//    assert(result(0)._1 === time1 + Context.TimeStep)
+//    assert(result(0)._2.size === 1)
+//    assert(result(0)._2.last === 1.0)
+//
+//    assert(result(1)._1 === time3)
+//    assert(result(1)._2.size === 1)
+//    assert(result(1)._2.last === 2.0)
+//
+//    assert(result(2)._1 === time3 + Context.TimeStep)
+//    assert(result(2)._2.size === 2)
+//    assert(result(2)._2(0) === 5.0)
+//    assert(result(2)._2(1) === 4.0)
+//
+//    assert(result(3)._1 === time4)
+//    assert(result(3)._2.size === 2)
+//    assert(result(3)._2(0) === 10.0)
+//    assert(result(3)._2(1) === 8.0)
+//
+//    assert(result(4)._1 === time5)
+//    assert(result(4)._2.size === 3)
+//    assert(result(4)._2(0) === 15.0)
+//    assert(result(4)._2(1) === 3.0)
+//    assert(result(4)._2(2) === 12.0)
+  }
 }

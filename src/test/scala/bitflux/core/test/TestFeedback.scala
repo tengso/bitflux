@@ -4,7 +4,6 @@ import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global 
 import scala.concurrent.duration._
 
-//import com.github.nscala_time.time.Imports._
 import org.scalatest.FunSuite
 import bitflux.core._
 import bitflux.env._
@@ -74,14 +73,14 @@ class TestFeedback extends FunSuite {
       }
     }
 
-    val bt = new Simulation(time1, time1 + 2) {
-      val res = run {
-        val s = CurveSource(Curve(List(time1), List(1)))
+    val bt = new Simulation(time1, time1 + 2 * Context.TimeStep) {
+      val s = CurveSource(Curve(List(time1), List(1)))
 
+      val res = run {
         val fd = new Feedback[Int]
         val a = new A(s, fd)
-        fd from (a)
-        a.setBufferSize(3)
+        fd from a
+        a.setBufferSize(10)
       }
     }
 
@@ -98,7 +97,7 @@ class TestFeedback extends FunSuite {
 
   test("fact") {
     val n = Curve(
-      List(time1, time1 + 1, time1 + 2, time1 + 3, time1 + 4),
+      List(time1, time1 + 1.nanos, time1 + 2.nanos, time1 + 3.nanos, time1 + 4.nanos),
       List(1, 2, 3, 4, 5))
 
     val bt = new Simulation(n.headOption.get._1, n.lastOption.get._1) {
@@ -109,7 +108,7 @@ class TestFeedback extends FunSuite {
             if (fact_n_1.isEmpty) n() else n() * fact_n_1()
           }
 
-          override def toString() = "fact"
+          override def toString = "fact"
         }
 
         val fact_n_1 = new Feedback[Int]("feedback: n_1")
@@ -119,17 +118,17 @@ class TestFeedback extends FunSuite {
       }
     }
 
-    val result = Await.result(bt.res, 1000 millisecond).collect
-    
+    val result = Await.result(bt.res, 1000 milliseconds).collect
+
     assert(result(0)._1 === time1)
     assert(result(0)._2 === 1)
-    assert(result(1)._1 === time1 + 1)
+    assert(result(1)._1 === time1 + 1.nanos)
     assert(result(1)._2 === 2)
-    assert(result(2)._1 === time1 + 2)
+    assert(result(2)._1 === time1 + 2.nanos)
     assert(result(2)._2 === 6)
-    assert(result(3)._1 === time1 + 3)
+    assert(result(3)._1 === time1 + 3.nanos)
     assert(result(3)._2 === 24)
-    assert(result(4)._1 === time1 + 4)
+    assert(result(4)._1 === time1 + 4.nanos)
     assert(result(4)._2 === 120)
   }
 
@@ -146,10 +145,10 @@ class TestFeedback extends FunSuite {
         n_1() + n_2()
       }
 
-      override def toString() = "fab"
+      override def toString = "fab"
     }
 
-    val bt = new Simulation(time1, time1 + 6) {
+    val bt = new Simulation(time1, time1 + 6.nanos) {
       val res = run {
         val n_1 = new Feedback[Int]("feedback: n_1")
         val n_2 = new Feedback[Int]("feedback: n_2")
@@ -166,17 +165,17 @@ class TestFeedback extends FunSuite {
     assert(result.size === 7)
     assert(result(0)._1 === time1)
     assert(result(0)._2 === 0)
-    assert(result(1)._1 === time1 + 1)
+    assert(result(1)._1 === time1 + 1.nanos)
     assert(result(1)._2 === 1)
-    assert(result(2)._1 === time1 + 2)
+    assert(result(2)._1 === time1 + 2.nanos)
     assert(result(2)._2 === 1)
-    assert(result(3)._1 === time1 + 3)
+    assert(result(3)._1 === time1 + 3.nanos)
     assert(result(3)._2 === 2)
-    assert(result(4)._1 === time1 + 4)
+    assert(result(4)._1 === time1 + 4.nanos)
     assert(result(4)._2 === 3)
-    assert(result(5)._1 === time1 + 5)
+    assert(result(5)._1 === time1 + 5.nanos)
     assert(result(5)._2 === 5)
-    assert(result(6)._1 === time1 + 6)
+    assert(result(6)._1 === time1 + 6.nanos)
     assert(result(6)._2 === 8)
   }
 }

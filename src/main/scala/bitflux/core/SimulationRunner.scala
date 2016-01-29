@@ -51,7 +51,7 @@ trait SimulationRunner { self: Context =>
         setCurrentTime(next.get)
 
         if (lastTime.nonEmpty) {
-//          assert(currentTime.get > lastTime.get, s"currentTime: ${currentTime.get}, lastTime: ${lastTime.get}")
+          assert(currentTime.get > lastTime.get, s"currentTime: ${currentTime.get}, lastTime: ${lastTime.get}")
         }
 
         exec()

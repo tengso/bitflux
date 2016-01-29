@@ -31,7 +31,8 @@ trait Context extends Flow[Nothing] {
 }
 
 object Context {
-  val TimeStep = 1 // in milli-seconds
+  import scala.concurrent.duration._
+  val TimeStep = 1 nanos // in milli-seconds
 }
 
 class ParallelSimulationContext(val name: String)(implicit val executionContext: ExecutionContext) 
