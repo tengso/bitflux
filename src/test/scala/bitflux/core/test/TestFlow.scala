@@ -9,6 +9,7 @@ import bitflux.core.Implicits._
 import bitflux.combinators.Implicits._
 import bitflux.core._
 import bitflux.env._
+import bitflux.test.util.Case
 
 class TestFlow extends FunSuite {
   val time1 = Timestamp(1972, 11, 17, 0, 0, 0, 0)
@@ -18,73 +19,40 @@ class TestFlow extends FunSuite {
   val time5 = time1 + Context.TimeStep * 8
   val time6 = time1 + Context.TimeStep * 10
 
-  val timesTrades = List(time1, time2, time3)
-
   case class Trade(price: Double, quantity: Double)
-  case class Quote(bid: Double, ask: Double)
-
-  val trades = List(
-    Trade(price = 100, quantity = 200),
-    Trade(price = 150, quantity = 100),
-    Trade(price = 150, quantity = 100))
-
-  val quotes = List(
-    Quote(ask = 101.0, bid = 100), Quote(ask = 102.0, bid = 100),
-    Quote(ask = 103.0, bid = 100), Quote(ask = 107.0, bid = 100),
-    Quote(ask = 103.0, bid = 100), Quote(ask = 107.0, bid = 100))
 
   test("Mid") {
-    class Mid(quote: Flow[Quote]) extends Flow[Double] {
-      react(quote) {
-        (quote().bid + quote().ask) / 2
+    case class Quote(bid: Double, ask: Double)
+
+    val input = Seq(
+      time1 -> Quote(ask = 101.0, bid = 100),
+      time2 -> Quote(ask = 102.0, bid = 100),
+      time3 -> Quote(ask = 103.0, bid = 100)
+    )
+
+    val output = Seq(
+      time1 -> (101 + 100) / 2.0,
+      time2 -> (102 + 100) / 2.0,
+      time3 -> (103 + 100) / 2.0
+    )
+
+    new Case(input, output) {
+      class Mid(quote: Flow[Quote]) extends Flow[Double] {
+        react(quote) {
+          (quote().bid + quote().ask) / 2
+        }
+      }
+
+      lazy val test = (quote: Flow[Quote]) => {
+        new Mid(quote)
       }
     }
-
-    val quotes = List(
-      Quote(ask = 101.0, bid = 100),
-      Quote(ask = 102.0, bid = 100),
-      Quote(ask = 103.0, bid = 100))
-    val timesQuotes = List(time2, time3, time4)
-
-    val bt = new Simulation(time1, time4) {
-      val result = run {
-        val quote = Curve(timesQuotes, quotes)
-        new Mid(quote).setBufferSize(5)
-      }
-    }.result
-
-    val res = Await.result(bt, 1000 millisecond).collect
-
-    assert(res.size === 3)
-    assert(res(0)._1 === time2)
-    assert(res(0)._2 === (101 + 100) / 2.0)
-    assert(res(1)._1 === time3)
-    assert(res(1)._2 === (102 + 100) / 2.0)
-    assert(res(2)._1 === time4)
-    assert(res(2)._2 === (103 + 100) / 2.0)
   }
 
   test("VWAP") {
-    val nRuns: Long = 1000000
+    val nRuns: Long = 100000
     val trades = (1L to nRuns).map(i => Trade(price = 100, quantity = 200)).toList
-    // FIXME: why millis doesn't work?
-    val timesTrades = (1L to nRuns).map(i => time1 + i).toList
-
-    def vwap(trade: Flow[Trade]): Flow[Double] = {
-      val price = trade(_.price)
-      val quantity = trade(_.quantity)
-
-      (price * quantity).sum / quantity.sum
-    }
-
-    println(time1)
-    println(timesTrades.last)
-    val bt = new Simulation(time1, timesTrades.last, isSequential = true) {
-      val res = run {
-        val trade = Curve(timesTrades, trades)
-        vwap(trade)
-      }
-    }
+    val times = (1L to nRuns).map(i => time1 + i).toList
 
     val pq = for (trade <- trades) yield {
       trade.price * trade.quantity
@@ -94,12 +62,19 @@ class TestFlow extends FunSuite {
       trade.quantity
     }
 
-    val start = System.currentTimeMillis()
-    val res = Await.result(bt.res, 20000 millisecond).collect
-    val end = System.currentTimeMillis()
-    print(end - start)
+    val input = times.zip(trades)
+    val output = Seq(times.last -> pq.sum / quantities.sum)
 
-    assert(res.last._2 === pq.sum / quantities.sum)
+    new Case(input, output, 2000 millis) {
+      def vwap(trade: Flow[Trade]): Flow[Double] = {
+        val price = trade(_.price)
+        val quantity = trade(_.quantity)
+
+        (price * quantity).sum / quantity.sum
+      }
+
+      lazy val test = (trades: Flow[Trade]) => vwap(trades)
+    }
   }
 
   test("max") {
@@ -145,21 +120,22 @@ class TestFlow extends FunSuite {
   }
 
   test("constant 2") {
-    import bitflux.core.Implicits._
-    val bt = new Simulation(time1, time2) {
-      val res = run {
-        val price = CurveSource(Curve(List(time1, time2), List(2.0, 3.0)))
+    val input = Seq(
+      time1 -> 2.0,
+      time2 -> 3.0
+    )
+
+    val output = Seq(
+      time1 -> 4.0,
+      time2 -> 6.0
+    )
+
+    new Case(input, output) {
+      lazy val test = (price: Flow[Double]) => {
         val two = Constant(2.0)
-        (price * two).setBufferSize(2)
+        price * two
       }
     }
-
-    val res = Await.result(bt.res, 1000 millisecond).collect;
-    assert(res.size === 2)
-    assert(res(0)._1 === time1)
-    assert(res(0)._2 === 4)
-    assert(res(1)._1 === time2)
-    assert(res(1)._2 === 6)
   }
 
   test("lift field") {
