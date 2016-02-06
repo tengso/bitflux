@@ -1,14 +1,11 @@
 package bitflux.core.test
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent._
+
 import scala.concurrent.duration._
 
 import org.scalatest.FunSuite
 
-import bitflux.core.Implicits._
 import bitflux.combinators.Implicits._
 import bitflux.core._
-import bitflux.env._
 import bitflux.test.util.Case
 
 class TestFlow extends FunSuite {
@@ -19,7 +16,6 @@ class TestFlow extends FunSuite {
   val time5 = time1 + Context.TimeStep * 8
   val time6 = time1 + Context.TimeStep * 10
 
-  case class Trade(price: Double, quantity: Double)
 
   test("Mid") {
     case class Quote(bid: Double, ask: Double)
@@ -50,6 +46,8 @@ class TestFlow extends FunSuite {
   }
 
   test("VWAP") {
+    case class Trade(price: Double, quantity: Double)
+
     val nRuns: Long = 100000
     val trades = (1L to nRuns).map(i => Trade(price = 100, quantity = 200)).toList
     val times = (1L to nRuns).map(i => time1 + i).toList
@@ -78,9 +76,6 @@ class TestFlow extends FunSuite {
   }
 
   test("max") {
-    val times = List(time1, time2, time3)
-    val values = List(1.0, 5.0, 3.0)
-
     class Max(a: Flow[Double]) extends Flow[Double] {
       var m: Option[Double] = None
       react(a) {
@@ -90,94 +85,23 @@ class TestFlow extends FunSuite {
       }
     }
 
-    val bt = new Simulation(time1, time3) {
-      val res = run {
-        new Max(Curve(times, values)).setBufferSize(3)
-      }
-    }
-    
-    val res = Await.result(bt.res, 1000 millisecond).collect
-
-    assert(res.size === 3)
-    assert(res(0)._1 === time1)
-    assert(res(0)._2 === 1)
-    assert(res(1)._1 === time2)
-    assert(res(1)._2 === 5)
-    assert(res(2)._1 === time3)
-    assert(res(2)._2 === 5)
-
-  }
-  
-  test("constant 1") {
-    val bt = new Simulation(time1, time2) {
-      val res = run {
-        val one = Constant(1.0)
-        val two = Constant(2.0)
-        one + two
-      }
-    }
-    assert(Await.result(bt.res, 1000 millisecond)() === 3.0)
-  }
-
-  test("constant 2") {
     val input = Seq(
-      time1 -> 2.0,
-      time2 -> 3.0
+      time1 -> 1.0,
+      time2 -> 5.0,
+      time3 -> 3.0
     )
 
     val output = Seq(
-      time1 -> 4.0,
-      time2 -> 6.0
+      time1 -> 1.0,
+      time2 -> 5.0,
+      time3 -> 5.0
     )
 
     new Case(input, output) {
-      lazy val test = (price: Flow[Double]) => {
-        val two = Constant(2.0)
-        price * two
+      lazy val test = (input: Flow[Double]) => {
+        new Max(input)
       }
     }
-  }
-
-  test("lift field") {
-    case class Position(quantity: Int, notional: Double)
-
-    val pos1 = Position(quantity = 2, notional = 100.0)
-    val pos2 = Position(quantity = 4, notional = 200.0)
-
-    val bt = new Simulation(time1, time2) {
-      val res = run {
-        val positions = CurveSource(Curve(List(time1, time2), List(pos1, pos2)))
-        val quantities = positions(_.quantity)
-        (quantities * Constant(2)).setBufferSize(2)
-      }
-    }
-
-    val res = Await.result(bt.res, 1000 millisecond).collect
-    assert(res.size === 2)
-    assert(res(0)._1 === time1)
-    assert(res(0)._2 === 4)
-    assert(res(1)._1 === time2)
-    assert(res(1)._2 === 8)
-  }
-
-  test("placeholder") {
-    val bt = new Simulation(time1, time2) {
-      val res = run {
-        val out = new Placeholder[Int]
-        val source = Curve(List(time1, time2), List(1, 2))
-        val result = out * Constant(2)
-        out.setInput(source)
-        result.setBufferSize(2)
-      }
-    }
-
-    val res = Await.result(bt.res, 1000 millisecond).collect
-
-    assert(res.size === 2)
-    assert(res(0)._1 === time1)
-    assert(res(0)._2 === 2)
-    assert(res(1)._1 === time2)
-    assert(res(1)._2 === 4)
   }
 
   test("scheduler") {
@@ -196,323 +120,69 @@ class TestFlow extends FunSuite {
       }
     }
 
-    val bt = new Simulation(time1, time3) {
-      val res = run {
-        val s = Curve(List(time1, time2, time3), List(1, 2, 3))
+    val input = Seq(
+      time1 -> 1,
+      time2 -> 2,
+      time3 -> 3
+    )
 
-        val a = new A(s, true)
+    val output = Seq[(Timestamp, Int)]()
+
+    new Case(input, output) {
+      lazy val test = (input: Flow[Int]) => {
+        val a = new A(input, true)
         val aa = new A(a, false)
         new B(aa)
       }
     }
-
-    assert(Await.result(bt.res, 1000 millisecond).collect.size === 0)
   }
 
-  test("seq input") {
-    val bt = new Simulation(time1, time3) {
-      val res = run {
-        class A(val inputs: List[Flow[Int]], val value: List[Int]) extends Flow[Int] {
-          react(inputs) {
-            inputs map (x => x()) sum
-          }
-        }
+  test("test inheritance") {
+    val input = Seq(
+      time1 -> 2,
+      time2 -> 4
+    )
 
-        val a = CurveSource(Curve(List(time1, time2, time3), List(3, 2, 5)))
-        val b = CurveSource(Curve(List(time1, time2), List(2, 4)))
+    val output = Seq(
+      time1 -> 6,
+      time2 -> 12
+    )
 
-        (new A(List(a, b), List(1, 2))).setBufferSize(3)
+    class A(val inputs: Flow[Int]) extends Flow[Int] {
+      react(inputs) {
+        inputs() * getMultiplier
       }
 
+      def getMultiplier = 2
     }
 
-    val result = Await.result(bt.res, 1000 millisecond).collect
+    class BOM(val in: Flow[Int]) extends A(in) {
+      override def getMultiplier = 3
+    }
 
-    assert(result.size == 3)
-    assert(result(0)._1 === time1)
-    assert(result(0)._2 === 5)
-    assert(result(1)._1 === time2)
-    assert(result(1)._2 === 6)
-    assert(result(2)._1 === time3)
-    assert(result(2)._2 === 9)
-  }
-
-  test("map input") {
-    val bt = new Simulation(time1, time3) {
-      val res = run {
-        class A(val inputs: Map[String, Flow[Int]], value: Map[Int, Int]) extends Flow[Int] {
-          react(inputs) {
-            inputs("a")() + inputs("b")()
-          }
-        }
-
-        val a = CurveSource(Curve(List(time1, time2, time3), List(3, 2, 5)))
-        val b = CurveSource(Curve(List(time1, time2), List(2, 4)))
-
-        val input = Map("a" -> a, "b" -> b)
-        new A(input, Map(1 -> 1)).setBufferSize(3)
+   new Case(input, output) {
+      lazy val test = (input: Flow[Int]) => {
+        new BOM(input)
       }
     }
-    val result = Await.result(bt.res, 1000 millisecond).collect
-
-    assert(result.size == 3)
-    assert(result(0)._1 === time1)
-    assert(result(0)._2 === 5)
-    assert(result(1)._1 === time2)
-    assert(result(1)._2 === 6)
-    assert(result(2)._1 === time3)
-    assert(result(2)._2 === 9)
-  }
-
-  test("test inheritance 1") {
-    val bt = new Simulation(time1, time3) {
-      val res = run {
-        class A(val inputs: Flow[Int]) extends Flow[Int] {
-          react(inputs) {
-            inputs() * getMultiplier
-          }
-
-          def getMultiplier = 2
-        }
-
-        class BOM(val in: Flow[Int]) extends A(in) {
-          override def getMultiplier = 3
-        }
-
-        val c = Curve(List(time1, time2), List(2, 4))
-        new BOM(c).setBufferSize(2)
-      }
-    }
-
-    val result = Await.result(bt.res, 1000 millisecond).collect
-
-    assert(result.size === 2)
-    assert(result(0)._1 === time1)
-    assert(result(0)._2 === 6)
-    assert(result(1)._1 === time2)
-    assert(result(1)._2 === 12)
   }
 
   test("last") {
-    val curve = Curve(
-      List(time1, time2, time3),
-      List(Seq(1), Seq(), Seq(4, 5)))
+    val input = Seq(
+      time1 -> Seq(1),
+      time2 -> Seq(),
+      time3 -> Seq(4, 5)
+    )
 
-    val bt = new Simulation(time1, time3) {
-      val res = run {
-        val in = CurveSource[Seq[Int]](curve)
-        in.last.setBufferSize(2)
+    val output = Seq(
+      time1 -> 1,
+      time3 -> 5
+    )
+
+    new Case(input, output) {
+      lazy val test = (input: Flow[Seq[Int]]) => {
+        input.last
       }
     }
-    val result = Await.result(bt.res, 1000 millisecond).collect
-
-    assert(result.size === 2)
-    assert(result(0)._1 === time1)
-    assert(result(0)._2 === 1)
-    assert(result(1)._1 === time3)
-    assert(result(1)._2 === 5)
-  }
-
-  test("product 2") {
-    case class Trade(price: Double, quantity: Int)
-
-    val curve = Curve(
-      List(time1, time2, time3),
-      List(Trade(99.01, 100), Trade(99.02, 200), Trade(99.03, 300)))
-
-    val bt = new Simulation(time1, time3) {
-      val res = run {
-        val in = CurveSource(curve)
-
-        val price = in(_.price).setBufferSize(3)
-        val quantity = in(_.quantity).setBufferSize(3)
-        (price, quantity)
-      }
-    }
-
-    val result = Await.result(bt.res, 1000 millisecond)._1.collect
-
-    assert(result.size === 3)
-    assert(result(0)._1 === time1)
-    assert(result(0)._2 === 99.01)
-
-    assert(result(1)._1 === time2)
-    assert(result(1)._2 === 99.02)
-
-    assert(result(2)._1 === time3)
-    assert(result(2)._2 === 99.03)
-
-    val resultQuantity = Await.result(bt.res, 1000 millisecond)._2.collect
-
-    assert(resultQuantity.size === 3)
-    assert(resultQuantity(0)._1 === time1)
-    assert(resultQuantity(0)._2 === 100)
-
-    assert(resultQuantity(1)._1 === time2)
-    assert(resultQuantity(1)._2 === 200)
-
-    assert(resultQuantity(2)._1 === time3)
-    assert(resultQuantity(2)._2 === 300)
-  }
-
-  test("chained") {
-    case class Bid(price: Double, quanitty: Int)
-    case class Ask(price: Double, quanitty: Int)
-    case class Quote(bid: Bid, ask: Ask)
-
-    val curve = Curve(
-      List(time1, time2, time3),
-      List(
-        Quote(Bid(99.01, 100), Ask(99.02, 100)),
-        Quote(Bid(99.02, 200), Ask(99.03, 200)),
-        Quote(Bid(99.03, 300), Ask(99.04, 300))))
-
-    val bt = new Simulation(time1, time3) {
-      val res = run {
-        val in = CurveSource(curve)
-
-        in(_.bid)(_.price).setBufferSize(3)
-      }
-    }
-
-    val result = Await.result(bt.res, 1000 millisecond).collect
-
-    assert(result.size === 3)
-    assert(result(0)._1 === time1)
-    assert(result(0)._2 === 99.01)
-
-    assert(result(1)._1 === time2)
-    assert(result(1)._2 === 99.02)
-
-    assert(result(2)._1 === time3)
-    assert(result(2)._2 === 99.03)
-  }
-  
-  test("multiple-outputs") {
-    case class Trade(price: Double, quantity: Int) 
-    
-    def volumeAndVWAP(trades: Flow[Trade]): (Flow[Double], Flow[Int]) = {
-      val quantities = new Flow[Int] {
-        var sumQuantity = 0
-        
-        react(trades) {
-          sumQuantity += trades().quantity
-          sumQuantity 
-        }
-      }
-      
-      val vwap = new Flow[Double] {
-        var sum = 0.0
-        
-        react(trades, quantities) {
-          sum += trades().price * trades().quantity
-          sum / quantities()
-        }
-      }
-      
-      (vwap.setBufferSize(2), quantities.setBufferSize(2))
-    }
-    
-    val trades = Curve(
-        List(
-          time1 -> Trade(100.0, 100),
-          time2 -> Trade(200.0, 100)
-        ))
-        
-    val sim = new Simulation(time1, time2) {
-      val res = run {
-        volumeAndVWAP(trades)
-      }
-    }.res
-    
-    val res = Await.result(sim, 1000 millisecond)
-    
-    assert(res._1.collect.size === 2)
-    assert(res._1.collect(0)._1 === time1)
-    assert(res._1.collect(0)._2 === 100)
-    assert(res._1.collect(1)._1 === time2)
-    assert(res._1.collect(1)._2 === 150.0)
-    
-    assert(res._2.collect.size === 2)
-    assert(res._2.collect(0)._1 === time1)
-    assert(res._2.collect(0)._2 === 100)
-    assert(res._2.collect(1)._1 === time2)
-    assert(res._2.collect(1)._2 === 200)
-  }
-
-  test("constants") {
-    val bt = new Simulation(time1, time4) {
-      val res = run {
-        val source = CurveSource(Curve(List(time2, time3), List(1, 2)))
-        ((source + 1).setBufferSize(2).setBufferSize(2),
-          (source * 2).setBufferSize(2),
-          (source - 1).setBufferSize(2),
-          (source.toDoubles / 2.0).setBufferSize(2),
-          (source > 10).setBufferSize(2),
-          (source <= 1).setBufferSize(2),
-          (source === 1).setBufferSize(2)
-          )
-      }
-    }
-
-    val res = Await.result(bt.res, 1000 millisecond)
-
-    assert(res._1.collect.size === 2)
-    assert(res._1.collect.map(_._1) === Vector(time2, time3))
-    assert(res._1.collect.map(_._2) === Vector(2, 3))
-
-    assert(res._2.collect.size === 2)
-    assert(res._2.collect.map(_._1) === Vector(time2, time3))
-    assert(res._2.collect.map(_._2) === Vector(2, 4))
-
-    assert(res._3.collect.size === 2)
-    assert(res._3.collect.map(_._1) === Vector(time2, time3))
-    assert(res._3.collect.map(_._2) === Vector(0, 1))
-
-    assert(res._4.collect.size === 2)
-    assert(res._4.collect.map(_._1) === Vector(time2, time3))
-    assert(res._4.collect.map(_._2) === Vector(0.5, 1))
-
-    assert(res._5.collect.size === 2)
-    assert(res._5.collect.map(_._1) === Vector(time2, time3))
-    assert(res._5.collect.map(_._2) === Vector(false, false))
-
-    assert(res._6.collect.size === 2)
-    assert(res._6.collect.map(_._1) === Vector(time2, time3))
-    assert(res._6.collect.map(_._2) === Vector(true, false))
-
-    assert(res._7.collect.size === 2)
-    assert(res._7.collect.map(_._1) === Vector(time2, time3))
-    assert(res._7.collect.map(_._2) === Vector(true, false))
-  }
-
-  test("buffer size 1") {
-    val bt = new Simulation(time1, time4) {
-      val res = run {
-        val source = CurveSource(Curve(List(time2, time3, time4), List(1, 2, 3)))
-        source.setBufferSize(2)
-      }
-    }
-
-    val res = Await.result(bt.res, 1000 millisecond).collect
-
-    assert(res.size == 2)
-    assert(res.map(_._1) === Vector(time3, time4))
-    assert(res.map(_._2) === Vector(2, 3))
-  }
-
-  test("buffer size 2") {
-    val bt = new Simulation(time1, time4) {
-      val res = run {
-        val source = CurveSource(Curve(List(time2, time3, time4), List(1, 2, 3)))
-        source.setBufferSize(4)
-      }
-    }
-
-    val res = Await.result(bt.res, 1000 millisecond).collect
-
-    assert(res.size == 3)
-    assert(res.map(_._1) === Vector(time2, time3, time4))
-    assert(res.map(_._2) === Vector(1, 2, 3))
   }
 }
