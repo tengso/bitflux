@@ -20,7 +20,7 @@ Features
 - Higher-order data-flow graph adjustable at run-time
 - Recursive data-flow where output can be fed back to the input
 
-####Synchronous event propagation enables:
+#### Synchronous event propagation enables:
 - Flow of data as a sequence of time-aware events
 - Running the exactly same code in simulation and production mode
 - Deterministic concurrency
