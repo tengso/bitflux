@@ -12,7 +12,7 @@ techniques and concepts? Can we make it easier to test and deploy
 data-flow applications in the enterprise environment? Bitflux is an 
 attempt to answer these questions.
 
-===================
+
 Features
 -------------
 #### Simple DSL modeling real-world reactive applications with:
