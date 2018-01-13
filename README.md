@@ -1,10 +1,10 @@
 Bitflux - A Data-flow Library in Scala
 -------------
 
-Thanks to the emerging of the "Reactive Manifesto" and the exciting tools 
+Thanks to the emerging of those exciting tools 
 such as Scala.React, Akka-stream, and Scala.Rx, etc., we have seen a 
 surge of interest in applying the data-flow programming paradigm into the 
-design and implementation of solutions meeting day-to-day business 
+design and implementation of systems for critical business 
 requirements. However, as a community aiming to raise the bar of 
 programmer experience, can we do more to help the Scala developers 
 “streamline” the complex real-world business logic with familiar 
